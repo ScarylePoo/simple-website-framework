@@ -1,0 +1,98 @@
+<!-- pagetitle: Footer Columns -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How to edit, add, and remove footer columns on your site. -->
+<!-- pagekeywords: footer, footer columns, sectiontitle, footertype -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The site footer is made up of columns, each one driven by a simple HTML file. Editing footer content is no different from editing any other page — open the file, change the text, save it.</p>
+
+<hr/>
+
+<h2>Where the footer files live</h2>
+
+<p>All footer files are stored in <code>pages/footer/</code>. They must be named in sequence:</p>
+
+<pre>
+pages/footer/footer1.html
+pages/footer/footer2.html
+pages/footer/footer3.html
+</pre>
+
+<p>The framework automatically detects how many footer files exist, so adding or removing a column is as simple as adding or removing a file. No configuration changes are needed.</p>
+
+<hr/>
+
+<h2>What a footer file looks like</h2>
+
+<p>A footer file has two optional comment tags at the top, followed by your content:</p>
+
+<pre>
+&lt;!-- sectiontitle: My Section Title --&gt;
+&lt;!-- footertype: html --&gt;
+
+&lt;p&gt;Your footer content goes here.&lt;/p&gt;
+</pre>
+
+<hr/>
+
+<h2>The sectiontitle comment</h2>
+
+<p>The <code>sectiontitle</code> comment sets the heading displayed above that column's content. If you leave it out, the column will show a generic label like <em>Section 1</em>.</p>
+
+<pre>
+&lt;!-- sectiontitle: About Us --&gt;
+</pre>
+
+<hr/>
+
+<h2>The footertype comment</h2>
+
+<p>The <code>footertype</code> comment tells the framework how to treat the content in that file. There are two options:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Value</th>
+            <th>Behaviour</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>html</code></td>
+            <td>Content is rendered as plain HTML. Use standard tags like <code>&lt;p&gt;</code>, <code>&lt;a&gt;</code>, <code>&lt;ul&gt;</code> etc.</td>
+        </tr>
+        <tr>
+            <td><code>md</code></td>
+            <td>Content is rendered as Markdown. Links, bold, and other Markdown formatting will work.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>If you leave the <code>footertype</code> comment out, the framework defaults to <code>html</code>.</p>
+
+<hr/>
+
+<h2>Adding a footer column</h2>
+
+<p>Create a new file in <code>pages/footer/</code> following the numbering sequence. For example, if you already have <code>footer1.html</code>, <code>footer2.html</code>, and <code>footer3.html</code>, create <code>footer4.html</code>. The framework will pick it up automatically on the next page load.</p>
+
+<hr/>
+
+<h2>Removing a footer column</h2>
+
+<p>Delete the file for the column you want to remove. If you remove a file from the middle of the sequence — for example, deleting <code>footer2.html</code> while <code>footer3.html</code> still exists — the framework will stop counting at the gap, so <code>footer3.html</code> will not be shown. Keep the files in an unbroken sequence.</p>
+
+<hr/>
+
+<h2>A complete example</h2>
+
+<pre>
+&lt;!-- sectiontitle: Get In Touch --&gt;
+&lt;!-- footertype: html --&gt;
+
+&lt;p&gt;Have a question? &lt;a href="contact"&gt;Send us a message&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;We're also on &lt;a href="https://github.com"&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+</pre>

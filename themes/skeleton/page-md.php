@@ -11,7 +11,7 @@
 					<?php if ($pagetype == "article") { ?>
 					
 						<?php echo "<p class=\"pagedate\">" . formatDate($pagedate, 'pretty') . "</p>"; ?>
-						<?php echo "<p class=\"pageauthor\">" . $pageauthor . "</p>"; ?>
+						<?php echo "<p class=\"pageauthor\"><i>Written by " . $pageauthor . "</i></p>"; ?>
 					<?php } ?>
 			<?php } else { ?>	
 					<h1><?php echo ucwords($pagename); ?></h1>

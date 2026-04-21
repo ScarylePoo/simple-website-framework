@@ -1,166 +1,194 @@
-<!-- pagetitle:StellarNav Menu System -->
-<!-- pagelayout:page-md -->
-<!-- pagedate: -->
-<!-- pageimage: -->
-<!-- pageexcerpt:StellarNav is a complete menu system written in CSS and Javascript. -->
-<!-- pagekeywords:StellarNav, navigation, items, navigation.md, lightweight, multi-level, dropdown menu, responsive, long navigation menus, formatting, syntax, headings, horizontal rules, emphasis, bold, italic, strikethrough, underline, blockquotes, lists, ordered, unordered, code, inline, blocks, tables, links, images, footnotes, conclusion, versatile, easy-to-use, documents, options, theme, breakpoint, menuLabel, sticky, position, openingSpeed, closingDelay, showArrows, phoneBtn, phoneLabel, locationBtn, locationLabel, closeBtn, closeLabel, mobileMode, scrollbarFix, mega dropdowns, columns, drop-left. -->
-<!-- pageauthor:Scary le Poo -->
-<!-- pagetype:website -->
+<!-- pagetitle: StellarNav Menu System -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How to edit navigation, how the Markdown nav syntax works, and all StellarNav configuration options. -->
+<!-- pagekeywords: stellarnav, navigation, menu, dropdown, responsive, nav, mobile -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
 
-## This framework uses StellarNav
-
-You can edit the navigation items by simply editing navigation.md
-
-```
-- [Home]()
-- [Markdown Tutorial](markdowntutorial)
-- [Jac](jac)
-- [Posts/Archives](archives)
-- [Dropdown Item](javascript:void(0);)<!-- Use javascript:void(0); as the link target on top level items to avoid them being clickable and thus confusing visitors -->
-  - [Navigation Tutorial](navigationtutorial.md)
-  - [Site Navigation File](navigation.md)
-  - [Item](javascript:void(0);)
-    - [Drop left menu item](n)
-    - [Drop left menu item](#)
-```
-
-Sub items are accomplished by simply intenting.
-
-# StellarNav.js
-Responsive, lightweight, multi-level dropdown menu. Stellarnav is a great solution for long navigation menus with lots of menu items.
-
-<a href="http://vinnymoreira.com/stellarnav-js-demo/">Click here</a> to see StellarNav.js in action.
-
-## Installation
-
-### CSS
-Include the StellarNav stylesheet.
-```html
-<link rel="stylesheet" type="text/css" media="all" href="css/stellarnav.min.css">
-```
-### HTML
-Add a `stellarnav` class to your menu div.
-```html
-<div class="stellarnav">
-     <ul>
-        <li><a href="#">Item</a></li>
-        <li><a href="#">Item</a></li>
-        <li><a href="#">Item</a></li>
-     </ul>
-</div>
-```
-
-### Javascript
-Include `stellarnav.min.js` and call `stellarNav()`.
-```javascript
-<script type="text/javascript" src="js/stellarnav.js"></script>
-<script type="text/javascript">
-	jQuery(document).ready(function($) {
-		jQuery('.stellarnav').stellarNav();
-	});
-</script>
-```
-## Options
-
-Here's a list of available settings.
-
-```javascript
-jQuery('.stellarnav').stellarNav({
-  theme: 'plain', // adds default color to nav. (light, dark)
-  breakpoint: 768, // number in pixels to determine when the nav should turn mobile friendly
-  menuLabel: 'Menu', // label for the mobile nav
-  sticky: false, // makes nav sticky on scroll (desktop only)
-  position: 'static', // 'static', 'top', 'left', 'right' - when set to 'top', this forces the mobile nav to be placed absolutely on the very top of page
-  openingSpeed: 250, // how fast the dropdown should open in milliseconds
-  closingDelay: 250, // controls how long the dropdowns stay open for in milliseconds
-  showArrows: true, // shows dropdown arrows next to the items that have sub menus
-  phoneBtn: '', // adds a click-to-call phone link to the top of menu - i.e.: "18009084500"
-  phoneLabel: 'Call Us', // label for the phone button
-  locationBtn: '', // adds a location link to the top of menu - i.e.: "/location/", "http://site.com/contact-us/"
-  locationLabel: 'Location', // label for the location button
-  closeBtn: false, // adds a close button to the end of nav
-  closeLabel: 'Close', // label for the close button
-  mobileMode: false,
-  scrollbarFix: false // fixes horizontal scrollbar issue on very long navs
+<p>The framework uses <a href="https://github.com/vinnymoreira/stellarnav">StellarNav</a> — a lightweight, responsive, multi-level dropdown menu — for site navigation. The navigation content itself is driven by a plain Markdown file, making it easy to edit without touching any PHP or HTML.</p>
+<hr/>
+<h2>Editing the Navigation</h2>
+<p>Open <code>pages/navigation.html</code> and edit it like any other page file. The navigation is a standard Markdown unordered list. The framework reads this file, passes it through the Markdown parser, and hands the resulting HTML to StellarNav for enhancement.</p>
+<p><strong>Basic structure:</strong></p>
+<pre><code class="language-markdown">- [Home]()
+- [About](/about)
+- [Blog](/archives)
+- [Contact](/contact)
+</code></pre>
+<p><strong>With dropdown menus</strong> — indent sub-items by one level:</p>
+<pre><code class="language-markdown">- [Home]()
+- [Documentation](#0)
+    - [Introduction](/documentation/introduction)
+    - [For Developers](#0)
+        - [Caching](/documentation/developers/caching)
+        - [Plugins](/documentation/developers/addingplugins)
+- [Contact](/contact)
+</code></pre>
+<p><strong>Key syntax rules:</strong></p>
+<ul>
+    <li>Use <code>#0</code> as the <code>href</code> for any parent item that should open a dropdown but not be a link itself. This prevents visitors from accidentally navigating to a dead link.</li>
+    <li>Dropdowns support up to <strong>three levels</strong> of nesting.</li>
+    <li>Standard relative URLs work for internal links (e.g. <code>documentation/introduction</code>). No leading slash is required because the framework sets a <code><base></code> tag.</li>
+    <li>External links work as normal: <code>[GitHub](https://github.com)</code>.</li>
+</ul>
+<hr/>
+<h2>StellarNav Configuration</h2>
+<p>StellarNav is initialised in <code>themes/skeleton/navigation-options.php</code>. The default configuration used by the framework is:</p>
+<pre><code class="language-javascript">jQuery('.stellarnav').stellarNav({
+    theme: '',
+    breakpoint: 1024,
+    menuLabel: 'Menu',
+    sticky: false,
+    position: 'static',
+    openingSpeed: 250,
+    closingDelay: 250,
+    showArrows: true,
+    phoneBtn: '',
+    phoneLabel: 'Call Us',
+    locationBtn: '',
+    locationLabel: 'Location',
+    closeBtn: false,
+    closeLabel: 'Close',
+    mobileMode: false,
+    scrollbarFix: false
 });
-```
-
-Attribute			| Type				| Default		| Description
----						| ---					| ---				| ---
-`theme`		| *String*		| `plain`		| Adds default color to nav. [plain, light, dark]
-`breakpoint`	| *Integer*		| `768`		| Number in pixels to determine when the nav should turn mobile friendly.
-`menuLabel`	| *String*		| `Menu`		| Label (text) for the mobile nav.
-`sticky`	| *Boolean*		| `false`		| Makes nav sticky on scroll.
-`position`	| *String*		| `static`		| [static, top, left, right] - When set to 'top', this forces the mobile nav to be placed absolutely on the very top of page. When set to 'left' or 'right', mobile nav fades in/out from left or right, accordingly.  
-`openingSpeed`	| *Integer*		| `250`		| Controls how fast the dropdowns open in milliseconds.
-`closingDelay`	| *Integer*		| `250`		| Controls how long the dropdowns stay open for in milliseconds.
-`showArrows`	| *Boolean*		| `true`		| Shows dropdown arrows next to the items that have sub menus.
-`phoneBtn`	| *String*		| `''`		| Adds a click-to-call phone link to the top of menu - i.e.: "18009084500".
-`phoneLabel`	| *String*		| `Call Us`		| Label (text) for the phone button.
-`locationBtn`	| *String*		| `''`		| Adds a location link to the top of menu - i.e.: "/location/", "http://site.com/contact-us/".
-`locationLabel`	| *String*		| `Location`		| Label (text) for the location button.
-`closeBtn`	| *Boolean*		| `false`		| Adds a close button to the end of nav.
-`closeLabel`	| *String*		| `Close`		| Label (text) for the close button.
-`mobileMode`	| *Boolean*		| `false`		| Turns the menu mobile friendly by default.
-`scrollbarFix`	| *Boolean*		| `false`		| Fixes horizontal scrollbar issue on very long menus.
-
-## Mega Dropdowns
-
-The mega dropdown feature allows you to fully extend the width of the dropdown and group the sub-dropdown items by a specific number of columns. This is extremely useful when dealing large menus.
-
-You can turn any dropdown into a mega dropdown menu by simply adding a class of `mega` and an html attribute of `data-columns` to the top-level item. The number of columns for the `data-columns` attribute that can be any integer from `2 to 8`. Example:
-
-```html
-<div class="stellarnav">
-     <ul>
-        <li class="mega" data-columns="4">
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-          <a href="#">Item</a>
-        </li>
-        <li><a href="#">Item</a></li>
-        <li><a href="#">Item</a></li>
-     </ul>
-</div>
-```
-
-**&ast;Note:** `data-columns` defaults to `4`. If you specify a number other than 2-8 or forget to add the `data-columns` attribute to the list item, the dropdown menu will automatically be divided into 4 columns.
-
-## Extra
-
-### Open / Close Menu
-
-You can add the css classes `stellarnav-open` or `stellarnav-close` to any html element on the page to activate opening or closing of menu on click.
-
-### Drop Left
-
-For long dropdown menus and for some of the last navigation items, you may use the class `drop-left` to the list item so that the dropdown drops leftward. This prevents menu from breaking the grid and getting a horizontal scrollbar.
-
-```html
-<div class="stellarnav">
-     <ul>
-        <li><a href="#">Item</a></li>
-        <li><a href="#">Item</a></li>
-        <li><a href="#">Item</a></li>
-        <li><a href="#">Item</a></li>
-        <li class="drop-left"><a href="#">Last Dropdown Item</a>
-        	<ul>
-        		<li><a href="#">Item</a></li>
-        		<li><a href="#">Item</a>
-        			<ul>
-        				<li><a href="#">Drop left menu item</a></li>
-        				<li><a href="#">Drop left menu item</a></li>
-        			</ul>
-        		</li>
-        	</ul>
-        </li>
-     </ul>
-</div>
-```
-
-If this is not an option and you are still getting a scrollbar, you may also set the `scrollbarFix` option to `true`.
+</code></pre>
+<p>To change any of these, edit <code>navigation-options.php</code> in your active theme folder.</p>
+<hr/>
+<h2>Options Reference</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>theme</code></td>
+            <td>string</td>
+            <td><code>''</code></td>
+            <td>Adds a default colour scheme. Options: <code>''</code> (none), <code>'light'</code>, <code>'dark'</code></td>
+        </tr>
+        <tr>
+            <td><code>breakpoint</code></td>
+            <td>integer</td>
+            <td><code>1024</code></td>
+            <td>Screen width in pixels at which the nav switches to mobile mode</td>
+        </tr>
+        <tr>
+            <td><code>menuLabel</code></td>
+            <td>string</td>
+            <td><code>'Menu'</code></td>
+            <td>Label shown on the mobile hamburger button</td>
+        </tr>
+        <tr>
+            <td><code>sticky</code></td>
+            <td>boolean</td>
+            <td><code>false</code></td>
+            <td>Makes the nav stick to the top of the page on scroll (desktop only)</td>
+        </tr>
+        <tr>
+            <td><code>position</code></td>
+            <td>string</td>
+            <td><code>'static'</code></td>
+            <td>Mobile nav position: <code>'static'</code>, <code>'top'</code>, <code>'left'</code>, <code>'right'</code></td>
+        </tr>
+        <tr>
+            <td><code>openingSpeed</code></td>
+            <td>integer</td>
+            <td><code>250</code></td>
+            <td>Time in milliseconds for dropdown open animation</td>
+        </tr>
+        <tr>
+            <td><code>closingDelay</code></td>
+            <td>integer</td>
+            <td><code>250</code></td>
+            <td>Time in milliseconds dropdowns stay open after mouse-out</td>
+        </tr>
+        <tr>
+            <td><code>showArrows</code></td>
+            <td>boolean</td>
+            <td><code>true</code></td>
+            <td>Show arrow indicators on items that have sub-menus</td>
+        </tr>
+        <tr>
+            <td><code>phoneBtn</code></td>
+            <td>string</td>
+            <td><code>''</code></td>
+            <td>Phone number for a click-to-call button (e.g. <code>'18005551234'</code>). Empty disables it</td>
+        </tr>
+        <tr>
+            <td><code>phoneLabel</code></td>
+            <td>string</td>
+            <td><code>'Call Us'</code></td>
+            <td>Label for the phone button</td>
+        </tr>
+        <tr>
+            <td><code>locationBtn</code></td>
+            <td>string</td>
+            <td><code>''</code></td>
+            <td>URL for a location button. Empty disables it</td>
+        </tr>
+        <tr>
+            <td><code>locationLabel</code></td>
+            <td>string</td>
+            <td><code>'Location'</code></td>
+            <td>Label for the location button</td>
+        </tr>
+        <tr>
+            <td><code>closeBtn</code></td>
+            <td>boolean</td>
+            <td><code>false</code></td>
+            <td>Adds a close button at the end of the mobile nav</td>
+        </tr>
+        <tr>
+            <td><code>closeLabel</code></td>
+            <td>string</td>
+            <td><code>'Close'</code></td>
+            <td>Label for the close button</td>
+        </tr>
+        <tr>
+            <td><code>mobileMode</code></td>
+            <td>boolean</td>
+            <td><code>false</code></td>
+            <td>Forces mobile layout regardless of screen width</td>
+        </tr>
+        <tr>
+            <td><code>scrollbarFix</code></td>
+            <td>boolean</td>
+            <td><code>false</code></td>
+            <td>Fixes a horizontal scrollbar issue that can appear on very long nav menus</td>
+        </tr>
+    </tbody>
+</table>
+<hr/>
+<h2>Mega Dropdowns</h2>
+<p>For very large menus, StellarNav supports "mega dropdowns" — full-width panels that organise many items into columns. Add the <code>mega</code> class and a <code>data-columns</code> attribute to a top-level <code><li></code> element. Since the nav is generated from Markdown, you would need to write this portion as raw HTML directly in <code>pages/navigation.html</code>:</p>
+<pre><code class="language-html">&lt;ul&gt;
+  &lt;li class="mega" data-columns="3"&gt;
+    &lt;a href="#0"&gt;Large Section&lt;/a&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href="/page-a"&gt;Page A&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href="/page-b"&gt;Page B&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href="/page-c"&gt;Page C&lt;/a&gt;&lt;/li&gt;
+      &lt;!-- ... more items ... --&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+</code></pre>
+<p><code>data-columns</code> can be any integer from 2 to 8. Defaults to 4 if omitted or out of range.</p>
+<hr/>
+<h2>Drop-Left Menus</h2>
+<p>If a dropdown near the right edge of the nav would overflow off-screen, add the <code>drop-left</code> class to that <code><li></code> to make it open leftward instead. Like mega dropdowns, this requires writing that nav item as raw HTML in <code>pages/navigation.html</code>:</p>
+<pre><code class="language-html">&lt;li class="drop-left"&gt;&lt;a href="/last-item"&gt;Last Item&lt;/a&gt;
+    &lt;ul&gt;
+        &lt;li&gt;&lt;a href="/sub-a"&gt;Sub A&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/li&gt;
+</code></pre>
+<p>Alternatively, set <code>scrollbarFix: true</code> in the StellarNav options if you would rather let the menu overflow and suppress the scrollbar.</p>

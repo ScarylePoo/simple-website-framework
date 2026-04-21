@@ -1,34 +1,31 @@
 <!-- pagetitle:Creating Pages/Posts -->
-<!-- pagelayout:page-md -->
+<!-- pagelayout:page-html -->
 <!-- pagedate: -->
 <!-- pageimage: -->
 <!-- pageexcerpt:Creating a new page for your website is a breeze! -->
 <!-- pagekeywords:Website creation, Page organization, Metadata essentials, SEO optimization, File management, Content formatting, Publishing process, Theme customization, Search engine visibility, Author attribution -->
-<!-- pageauthor:Scary le Poo -->
+<!-- pageauthor: Scary le Poo -->
 <!-- pagetype:website -->
 
-Creating a new page for your website is a breeze. Simply craft a new `.md` file. When it's time to publish, slot it into the `pages` folder, or nest it within a subfolder if you prefer. Access your new page via `<domain name>/<folder>/<file name>`. Typically, pages reside in the root `Pages` folder, but the choice is yours.
-
-Crafting a post follows the same straightforward process as creating a page. The only distinction is that posts are housed in the `pages/posts` subfolder.
-
-Each page requires specific metadata:
-
-```markdown
-<!-- pagetitle: -->
-<!-- pagelayout: -->
-<!-- pagedate: -->
-<!-- pageimage: --> 
-<!-- pageexcerpt: -->
-<!-- pagekeywords: -->
-<!-- pageauthor: -->
-<!-- pagetype: -->
-```
-
-1. **pagetitle:** The page title serves as the main header and browser tab title.
-2. **pagelayout:** Determines the theme layout applied. Usually, this defaults to 'page,' but your theme may offer alternative layouts.
-3. **pagedate:** Indicates the publication date, typically your own, although the system can use the file's timestamp if left blank.
-4. **pageimage:** Associates an image with the page, crucial for search engine visibility and, if applicable, as a thumbnail in layouts. Ensure the image path matches the page type (`pages/images` for pages, `pages/posts/images` for posts).
-5. **pageexcerpt:** Provides a concise 120-character summary, serving as a description or tagline.
-6. **pagekeywords:** Comprise essential terms for search engine optimization.
-7. **pageauthor:** Identifies the author for posts, appearing beneath the title.
-8. **pagetype:** Categorizes the page for search engines. Here are the possible catigorizations: `website, article, blog, profile, video, music, book, product`.
+<p>Creating a new page for your website is a breeze. Simply craft a new <code>.md</code> file. When it's time to publish, slot it into the <code>pages</code> folder, or nest it within a subfolder if you prefer. Access your new page via <code><domain name>/<folder>/<file name></code>. Typically, pages reside in the root <code>Pages</code> folder, but the choice is yours.</p>
+<p>Crafting a post follows the same straightforward process as creating a page. The only distinction is that posts are housed in the <code>pages/posts</code> subfolder.</p>
+<p>Each page requires specific metadata:</p>
+<pre><code class="language-markdown">&lt;!-- pagetitle: --&gt;
+&lt;!-- pagelayout: --&gt;
+&lt;!-- pagedate: --&gt;
+&lt;!-- pageimage: --&gt; 
+&lt;!-- pageexcerpt: --&gt;
+&lt;!-- pagekeywords: --&gt;
+&lt;!-- pageauthor: --&gt;
+&lt;!-- pagetype: --&gt;
+</code></pre>
+<ol>
+    <li><strong>pagetitle:</strong> The page title serves as the main header and browser tab title.</li>
+    <li><strong>pagelayout:</strong> Determines the theme layout applied. Usually, this defaults to 'page,' but your theme may offer alternative layouts.</li>
+    <li><strong>pagedate:</strong> Indicates the publication date, typically your own, although the system can use the file's timestamp if left blank.</li>
+    <li><strong>pageimage:</strong> Associates an image with the page, crucial for search engine visibility and, if applicable, as a thumbnail in layouts. Ensure the image path matches the page type (<code>pages/images</code> for pages, <code>pages/posts/images</code> for posts).</li>
+    <li><strong>pageexcerpt:</strong> Provides a concise 120-character summary, serving as a description or tagline.</li>
+    <li><strong>pagekeywords:</strong> Comprise essential terms for search engine optimization.</li>
+    <li><strong>pageauthor:</strong> Identifies the author for posts, appearing beneath the title.</li>
+    <li><strong>pagetype:</strong> Categorizes the page for search engines. Here are the possible catigorizations: <code>website, article, blog, profile, video, music, book, product</code>.</li>
+</ol>

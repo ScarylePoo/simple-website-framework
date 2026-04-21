@@ -1,65 +1,179 @@
-<!-- pagetitle:Flex Grid System -->
-<!-- pagelayout:page-md -->
-<!-- pagedate: -->
-<!-- pageimage: --> 
-<!-- pageexcerpt:Examples of how to use the flex grid system for your layout. -->
-<!-- pagekeywords:flex,grid,system,layout,columns -->
-<!-- pageauthor:Scary le Poo -->
-<!-- pagetype:website -->
-
-[Ultra Simple Flex Grid](https://codepen.io/ForbodingAngel/pen/ExJJbBo)
+<!-- pagetitle: Flex Grid System -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: A reference guide for the built-in flexbox grid system, with live examples and class documentation. -->
+<!-- pagekeywords: flex, grid, layout, columns, row, responsive, css -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
 
 <style>
-	.gray {
-		background-color: #efefef;
-		border: 1px solid #dedede;
-	}
+	.gray { background-color: #efefef; border: 1px solid #dedede; padding: 8px; text-align: center; }
+	.demo-label { font-family: monospace; font-size: 0.85em; color: #555; margin: 8px 0 2px; }
 </style>
-
-It isn't explicit here, but using `column` will allow the flex grid to arrange items however it likes using the flex basis as a guide.
-Alternatively, using `column col-X` means I want this to be X size, taking up X number of column sizes, also using flex basis as a guide.
-
-In general, it's probably best to use column when you can and just let the grid system figure it out.
-
+<h1>Flex Grid System</h1>
+<p>The framework includes a lightweight flexbox grid system in <code>css/flexgridsystem.css</code>. It uses two core classes — <code>row</code> and <code>column</code> — to create responsive multi-column layouts that automatically stack on small screens.</p>
+<hr/>
+<h2>Core Concept</h2>
+<p>Wrap columns in a <code>row</code>, and each child with <code>column</code>. Columns divide the available width equally by default and collapse to full width on screens narrower than 1000px.</p>
+<pre>
+&lt;div class="row"&gt;
+    &lt;div class="column"&gt;First&lt;/div&gt;
+    &lt;div class="column"&gt;Second&lt;/div&gt;
+    &lt;div class="column"&gt;Third&lt;/div&gt;
+&lt;/div&gt;
+</pre>
+<hr/>
+<h2>Auto-Dividing Columns</h2>
+<p>Add as many <code>column</code> divs as you need. The grid divides the space evenly.</p>
+<p class="demo-label">1 column</p>
 <div class="row">
-	<div class="column gray">1/1</div>
+    <div class="column gray">1/1</div>
 </div>
+<p class="demo-label">2 columns</p>
 <div class="row">
-	<div class="column gray">1/2</div>
-	<div class="column gray">1/2</div>
+    <div class="column gray">1/2</div>
+    <div class="column gray">1/2</div>
 </div>
+<p class="demo-label">3 columns</p>
 <div class="row">
-	<div class="column gray">1/3</div>
-	<div class="column gray">1/3</div>
-	<div class="column gray">1/3</div>
+    <div class="column gray">1/3</div>
+    <div class="column gray">1/3</div>
+    <div class="column gray">1/3</div>
 </div>
+<p class="demo-label">4 columns</p>
 <div class="row">
-	<div class="column gray">1/4</div>
-	<div class="column gray">1/4</div>
-	<div class="column gray">1/4</div>
-	<div class="column gray">1/4</div>
+    <div class="column gray">1/4</div>
+    <div class="column gray">1/4</div>
+    <div class="column gray">1/4</div>
+    <div class="column gray">1/4</div>
 </div>
+<hr/>
+<h2>Fixed-Width Column Classes (<code>col-1</code> to <code>col-6</code>)</h2>
+<p>Use <code>col-X</code> classes to pin one column to an exact fraction of 12, letting the remaining <code>column</code> fill the rest of the space.</p>
+<p class="demo-label">col-1 + auto</p>
 <div class="row">
-	<div class="column col-1 gray">1/12</div>
-	<div class="column gray">11/12</div>
+    <div class="column col-1 gray">1/12</div>
+    <div class="column gray">11/12</div>
 </div>
+<p class="demo-label">col-2 + auto</p>
 <div class="row">
-	<div class="column col-2 gray">2/12</div>
-	<div class="column gray">10/12</div>
+    <div class="column col-2 gray">2/12</div>
+    <div class="column gray">10/12</div>
 </div>
+<p class="demo-label">col-3 + auto</p>
 <div class="row">
-	<div class="column col-3 gray">3/12</div>
-	<div class="column gray">9/12</div>
+    <div class="column col-3 gray">3/12</div>
+    <div class="column gray">9/12</div>
 </div>
+<p class="demo-label">col-4 + auto</p>
 <div class="row">
-	<div class="column col-4 gray">4/12</div>
-	<div class="column gray">8/12</div>
+    <div class="column col-4 gray">4/12</div>
+    <div class="column gray">8/12</div>
 </div>
+<p class="demo-label">col-5 + auto</p>
 <div class="row">
-	<div class="column col-5 gray">5/12</div>
-	<div class="column gray">7/12</div>
+    <div class="column col-5 gray">5/12</div>
+    <div class="column gray">7/12</div>
 </div>
+<p class="demo-label">col-6 + auto</p>
 <div class="row">
-	<div class="column col-6 gray">6/12</div>
-	<div class="column gray">6/12</div>
+    <div class="column col-6 gray">6/12</div>
+    <div class="column gray">6/12</div>
 </div>
+<hr/>
+<h2>Flex-Basis Utility Classes</h2>
+<p>For layouts where you want columns to have a minimum width before wrapping (rather than a strict fractional size), use the <code>flex-basis-*</code> classes. These set a <code>flex-basis</code> value in pixels, allowing columns to wrap to the next line when the container gets too narrow.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>flex-basis value</th>
+            <th>Typical use</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>flex-basis-600</code></td>
+            <td>600px</td>
+            <td>Wide content blocks</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-500</code></td>
+            <td>500px</td>
+            <td>Medium-wide content</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-400</code></td>
+            <td>400px</td>
+            <td>Standard content blocks</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-300</code></td>
+            <td>300px</td>
+            <td>Sidebar / footer columns</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-150</code></td>
+            <td>150px</td>
+            <td>Small tiles or icons</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-auto</code></td>
+            <td>auto</td>
+            <td>Let content determine width</td>
+        </tr>
+    </tbody>
+</table>
+<p>The footer column system uses <code>flex-basis-300</code> by default.</p>
+<hr/>
+<h2>Responsive Behaviour</h2>
+<p>At screen widths below 1000px, all <code>column</code> elements switch to <code>min-width: 100%</code>, stacking vertically. No extra classes are needed — this is the default behaviour for every column.</p>
+<hr/>
+<h2>Class Reference</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>row</code></td>
+            <td>Flex container. Wraps columns. Apply to the parent div.</td>
+        </tr>
+        <tr>
+            <td><code>column</code></td>
+            <td>Flex child. Grows and shrinks equally with siblings.</td>
+        </tr>
+        <tr>
+            <td><code>col-1</code> – <code>col-6</code></td>
+            <td>Pins a column to 1–6 twelfths of the row width.</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-150</code></td>
+            <td>Sets flex-basis to 150px.</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-300</code></td>
+            <td>Sets flex-basis to 300px.</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-400</code></td>
+            <td>Sets flex-basis to 400px.</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-500</code></td>
+            <td>Sets flex-basis to 500px.</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-600</code></td>
+            <td>Sets flex-basis to 600px.</td>
+        </tr>
+        <tr>
+            <td><code>flex-basis-auto</code></td>
+            <td>Sets flex-basis to auto.</td>
+        </tr>
+    </tbody>
+</table>

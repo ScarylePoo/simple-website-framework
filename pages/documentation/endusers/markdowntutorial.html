@@ -1,91 +1,77 @@
 <!-- pagetitle:Markdown Tutorial -->
-<!-- pagelayout:page-md -->
+<!-- pagelayout:page-html -->
 <!-- pagedate: -->
 <!-- pageimage: -->
 <!-- pageexcerpt:Markdown is a lightweight markup language with plain-text formatting syntax. It's commonly used for formatting text on the web and is widely supported across various platforms. -->
 <!-- pagekeywords:Markdown, lightweight, markup language, plain-text, formatting, syntax, headings, horizontal rules, emphasis, bold, italic, strikethrough, underline, blockquotes, lists, ordered, unordered, code, inline, blocks, tables, links, images, footnotes, conclusion, versatile, easy-to-use, documents, experiment -->
-<!-- pageauthor:Scary le Poo -->
+<!-- pageauthor: Scary le Poo -->
 <!-- pagetype:website -->
 
-Welcome to the comprehensive Markdown tutorial! Markdown is a lightweight markup language with plain-text formatting syntax. It's commonly used for formatting text on the web and is widely supported across various platforms.
-
-## Headings
-
-You can create headings by using one to six hash symbols (`#`). The number of hash symbols indicates the level of the header.
-
-# Heading 1
+<p>Welcome to the comprehensive Markdown tutorial! Markdown is a lightweight markup language with plain-text formatting syntax. It's commonly used for formatting text on the web and is widely supported across various platforms.</p>
+<h2>Headings</h2>
+<p>You can create headings by using one to six hash symbols (<code>#</code>). The number of hash symbols indicates the level of the header.</p>
+<h1>Heading 1</h1>
+<h2>Heading 2</h2>
+<h3>Heading 3</h3>
+<h4>Heading 4</h4>
+<h5>Heading 5</h5>
+<h6>Heading 6</h6>
+<pre><code class="language-markdown"># Heading 1
 ## Heading 2
 ### Heading 3
 #### Heading 4
 ##### Heading 5
 ###### Heading 6
-
-```markdown
-# Heading 1
-## Heading 2
-### Heading 3
-#### Heading 4
-##### Heading 5
-###### Heading 6
-```
-
-## Horizontal Rules
-
-Horizontal rules can be created using three or more hyphens (`---`), asterisks (`***`), or underscores (`___`).
-
----
-
-```markdown
----
-```
-
-## Emphasis
-
-You can make text **bold** or *italic* using asterisks (`*`) or underscores (`_`).
-
-**Bold Text**
+</code></pre>
+<h2>Horizontal Rules</h2>
+<p>Horizontal rules can be created using three or more hyphens (<code>---</code>), asterisks (<code>***</code>), or underscores (<code>___</code>).</p>
+<hr/>
+<pre><code class="language-markdown">---
+</code></pre>
+<h2>Emphasis</h2>
+<p>You can make text <strong>bold</strong> or <em>italic</em> using asterisks (<code>*</code>) or underscores (<code>_</code>).</p>
+<p><strong>Bold Text</strong>
+<em>Italic Text</em></p>
+<pre><code class="language-markdown">**Bold Text**
 *Italic Text*
-
-```markdown
-**Bold Text**
-*Italic Text*
-```
-
-## Strikethrough
-
-You can strike through text using html (`<del></del>`).
-
-<del>Strikethrough Text</del>
-
-```markdown
-<del>Strikethrough Text</del>
-```
-
-## Underline
-
-Markdown doesn't have a native underline syntax, but you can achieve it using HTML `<u>` tags.
-
-<u>Underline Text</u>
-
-```markdown
-<u>Underline Text</u>
-```
-
-## Blockquotes
-
-You can create blockquotes using the greater than symbol (`>`).
-
-> This is a blockquote.
-
-```markdown
-> This is a blockquote.
-```
-
-## Lists
-
-Markdown supports both ordered and unordered lists.
-
-- Unordered Item 1
+</code></pre>
+<h2>Strikethrough</h2>
+<p>You can strike through text using html (<code><del></del></code>).</p>
+<p>
+    <del>
+        Strikethrough Text
+    </del>
+</p>
+<pre><code class="language-markdown">&lt;del&gt;Strikethrough Text&lt;/del&gt;
+</code></pre>
+<h2>Underline</h2>
+<p>Markdown doesn't have a native underline syntax, but you can achieve it using HTML <code>&lt;u&gt;</code> tags.</p>
+<p><u>Underline Text</u></p>
+<pre><code class="language-markdown">&lt;u&gt;Underline Text&lt;/u&gt;
+</code></pre>
+<h2>Blockquotes</h2>
+<p>You can create blockquotes using the greater than symbol (<code>></code>).</p>
+<blockquote>
+    <p>This is a blockquote.</p>
+</blockquote>
+<pre><code class="language-markdown">&gt; This is a blockquote.
+</code></pre>
+<h2>Lists</h2>
+<p>Markdown supports both ordered and unordered lists.</p>
+<ul>
+    <li>Unordered Item 1</li>
+    <li>Unordered Item 2</li>
+    <li>Subitem A</li>
+    <li>
+        <p>Subitem B</p>
+    </li>
+    <li>
+        <p>Ordered Item 1</p>
+    </li>
+    <li>Ordered Item 2</li>
+    <li>Ordered Item 3</li>
+</ul>
+<pre><code class="language-markdown">- Unordered Item 1
 - Unordered Item 2
   - Subitem A
   - Subitem B
@@ -93,38 +79,20 @@ Markdown supports both ordered and unordered lists.
 1. Ordered Item 1
 2. Ordered Item 2
 3. Ordered Item 3
-
-```markdown
-- Unordered Item 1
-- Unordered Item 2
-  - Subitem A
-  - Subitem B
-
-1. Ordered Item 1
-2. Ordered Item 2
-3. Ordered Item 3
-```
-
-## Code
-
-Inline code can be surrounded by backticks, and code blocks can be created using triple backticks.
-
-`print("Hello, World!")`
+</code></pre>
+<h2>Code</h2>
+<p>Inline code can be surrounded by backticks, and code blocks can be created using triple backticks.</p>
+<p><code>print("Hello, World!")</code></p>
+<pre><code class="language-python">def greet():
+    print("Hello, World!")
+</code></pre>
+<pre><code class="language-markdown">`print("Hello, World!")`
 
 ```python
 def greet():
     print("Hello, World!")
-```
-
-```markdown
-`print("Hello, World!")`
-
-```python
-def greet():
-    print("Hello, World!")
-```	
-```
-
+</code></pre>
+<pre><code>
 ## Tables
 
 Tables can be created using vertical bars (`|`) to separate columns and hyphens (`-`) to define the header and separate it from the content.
@@ -139,57 +107,38 @@ Tables can be created using vertical bars (`|`) to separate columns and hyphens 
 |----------|----------|
 | Cell 1   | Cell 2   |
 | Cell 3   | Cell 4   |
-```
-
-## Links
-
-You can create links by enclosing the link text in square brackets `[ ]` and the URL in parentheses `( )`.
-
-[OpenAI Website](https://openai.com/)
-
-```markdown
-[OpenAI Website](https://openai.com/)
-```
-
-## Images
-
-Images can be included using a similar syntax to links, but with an exclamation mark `!` in front.
-
-![Alt text](pages/images/babykitty.webp)
-
-```markdown
-![Alt text](pages/images/babykitty.webp)
-```
-
-## Footnotes
-
-You can add footnotes using a caret `^` followed by the footnote text in square brackets.
-
-Here is a footnote[^1].
+</code></pre>
+<h2>Links</h2>
+<p>You can create links by enclosing the link text in square brackets <code>[ ]</code> and the URL in parentheses <code>( )</code>.</p>
+<p><a href="https://openai.com/">OpenAI Website</a></p>
+<pre><code class="language-markdown">[OpenAI Website](https://openai.com/)
+</code></pre>
+<h2>Images</h2>
+<p>Images can be included using a similar syntax to links, but with an exclamation mark <code>!</code> in front.</p>
+<p><img alt="Alt text" src="pages/images/babykitty.webp"/></p>
+<pre><code class="language-markdown">![Alt text](pages/images/babykitty.webp)
+</code></pre>
+<h2>Footnotes</h2>
+<p>You can add footnotes using a caret <code>^</code> followed by the footnote text in square brackets.</p>
+<p>Here is a footnote<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
+<pre><code class="language-markdown">Here is a footnote[^1].
 
 [^1]: This is the footnote text.
-
-```markdown
-Here is a footnote[^1].
-
-[^1]: This is the footnote text.
-```
-
-## Adding CSS Classes to Elements
-
-You can add CSS classes to elements using {}
-
-For Example:
-
-![lolwut](pages/images/lolwut.webp){.small .center}
-
-```
-![lolwut](pages/images/lolwut.webp){.small .center}
-```
-
-
-## Conclusion
-
-Markdown is a versatile and easy-to-use markup language that allows you to create well-formatted documents with minimal effort. With the elements covered in this tutorial, you'll be well-equipped to create a wide range of content using Markdown.
-
-Experiment with different Markdown elements to see what works best for your needs!
+</code></pre>
+<h2>Adding CSS Classes to Elements</h2>
+<p>You can add CSS classes to elements using {}</p>
+<p>For Example:</p>
+<p><img alt="lolwut" class="small center" src="pages/images/lolwut.webp"/></p>
+<pre><code>![lolwut](pages/images/lolwut.webp){.small .center}
+</code></pre>
+<h2>Conclusion</h2>
+<p>Markdown is a versatile and easy-to-use markup language that allows you to create well-formatted documents with minimal effort. With the elements covered in this tutorial, you'll be well-equipped to create a wide range of content using Markdown.</p>
+<p>Experiment with different Markdown elements to see what works best for your needs!</p>
+<div class="footnote">
+    <hr/>
+    <ol>
+        <li id="fn:1">
+            <p>This is the footnote text. <a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">↩</a></p>
+        </li>
+    </ol>
+</div>

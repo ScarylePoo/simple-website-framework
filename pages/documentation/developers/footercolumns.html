@@ -1,0 +1,40 @@
+<!-- pagetitle: Footer Columns -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How to create and manage footer columns using Markdown files in pages/footer/. -->
+<!-- pagekeywords: footer, footer columns, footercolumns, sectiontitle -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The site footer is made up of a configurable number of columns, each driven by a Markdown content file. This makes footer content as easy to edit as any other page.</p>
+<hr/>
+<h2>Setting the Number of Columns</h2>
+<p>In <code>config/config.php</code>, set how many columns you want:</p>
+<pre><code class="language-php">$numberFooterColumns = 3;
+</code></pre>
+<p>The framework will look for files named <code>footer1.html</code>, <code>footer2.html</code>, <code>footer3.html</code> (and so on) inside <code>pages/footer/</code>. If a file is missing, that column will display an error message rather than silently disappearing.</p>
+<hr/>
+<h2>Creating Footer Files</h2>
+<p>Each footer file is a standard page content file placed in <code>pages/footer/</code>. The filename must follow the <code>footer[n].html</code> pattern exactly.</p>
+<p><strong>Minimal example (<code>pages/footer/footer1.html</code>):</strong></p>
+<pre><code class="language-markdown">&lt;!-- sectiontitle: About Us --&gt;
+
+We're a small team building simple tools for the web.
+
+[Contact us](/contact)
+</code></pre>
+<p>The files support full Markdown and all shortcodes. They do <strong>not</strong> use the standard page metadata block (<code>pagetitle</code>, <code>pagelayout</code>, etc.) — only the <code>sectiontitle</code> comment is recognised.</p>
+<hr/>
+<h2>The <code>sectiontitle</code> Comment</h2>
+<p>Each footer file can optionally define a section title using an HTML comment on the first line:</p>
+<pre><code class="language-html">&lt;!-- sectiontitle: My Section Title --&gt;
+</code></pre>
+<p>This title is rendered inside a <code><span class="sectiontitle"></code> above the column content. If the comment is not present, the framework falls back to a generic label like <code>Section 1</code>.</p>
+<hr/>
+<h2>How Footer Rendering Works</h2>
+<p>The <code>required/footercolumns.php</code> file handles footer rendering. It loops from <code>1</code> to <code>$numberFooterColumns</code>, reads each file, extracts the <code>sectiontitle</code>, passes the content through <code>from_markdown()</code>, and outputs each column inside a <code><div class="column flex-basis-300"></code> inside a <code><div class="row"></code>.</p>
+<p>This is included from the theme's <code>footer.php</code>:</p>
+<pre><code class="language-php">&lt;?php include 'required/footercolumns.php'; ?&gt;
+</code></pre>
+<p>If you are building a custom theme and want footer columns, keep this include in your <code>footer.php</code>.</p>

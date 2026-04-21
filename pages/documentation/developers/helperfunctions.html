@@ -1,0 +1,76 @@
+<!-- pagetitle: Helper Functions -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: A reference for the utility functions available throughout the framework. -->
+<!-- pagekeywords: helper functions, formatDate, from_markdown, to_markdown, utility -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The framework exposes several utility functions that are available globally in theme files, layout files, shortcode functions, and anywhere else PHP runs within the request lifecycle.</p>
+<hr/>
+<h2>Markdown Functions</h2>
+<p>These are defined in <code>required/initialize-markdown-parser.php</code>, which wraps the bundled PHP Markdown Parser library (<code>required/PHP-Markdown-Parser/</code>).</p>
+<h3><code>from_markdown($string)</code></h3>
+<p>Converts a Markdown string to HTML and returns the result.</p>
+<pre><code class="language-php">$html = from_markdown("# Hello\n\nThis is **bold**.");
+// Returns: &lt;h1&gt;Hello&lt;/h1&gt;&lt;p&gt;This is &lt;strong&gt;bold&lt;/strong&gt;.&lt;/p&gt;
+</code></pre>
+<p>This is used by all <code>page-md</code> layout files to render page content, by <code>navigation.php</code> to render the navigation list, and by <code>footercolumns.php</code> to render footer content. You can call it anywhere you want to render Markdown.</p>
+<hr/>
+<h3><code>to_markdown($string)</code></h3>
+<p>Converts an HTML string back to Markdown. The inverse of <code>from_markdown()</code>.</p>
+<pre><code class="language-php">$markdown = to_markdown("&lt;h1&gt;Hello&lt;/h1&gt;&lt;p&gt;World&lt;/p&gt;");
+</code></pre>
+<p>This is less commonly needed but available if you need to convert HTML content for storage or export purposes.</p>
+<hr/>
+<h2>Date Functions</h2>
+<p>Defined in <code>required/helperfunctions.php</code>.</p>
+<h3><code>formatDate($inputDate, $outputDateFormat)</code></h3>
+<p>Parses a date string in any of several supported formats and returns it formatted as specified. Returns <code>false</code> if the input cannot be parsed.</p>
+<p><strong>Supported input formats:</strong>
+- <code>Y-m-d H:i:s</code> (e.g. <code>2024-06-15 00:00:00</code>)
+- <code>l F jS, Y</code> (e.g. <code>Saturday June 15th, 2024</code>)
+- <code>m/d/Y</code> (e.g. <code>06/15/2024</code>)</p>
+<p><strong>Supported output format values:</strong></p>
+<table>
+    <thead>
+        <tr>
+            <th>Value</th>
+            <th>Output example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>'Y-m-d H:i:s'</code></td>
+            <td><code>2024-06-15 00:00:00</code></td>
+        </tr>
+        <tr>
+            <td><code>'pretty'</code></td>
+            <td><code>Saturday June 15th, 2024</code></td>
+        </tr>
+    </tbody>
+</table>
+<p><strong>Example:</strong></p>
+<pre><code class="language-php">echo formatDate("06/15/2024", 'pretty');
+// Outputs: Saturday June 15th, 2024
+
+echo formatDate("2024-06-15 00:00:00", 'pretty');
+// Outputs: Saturday June 15th, 2024
+</code></pre>
+<p>The framework calls <code>formatDate()</code> in <code>header.php</code> to normalise <code>$pagedate</code> before writing it to the OpenGraph <code>og:article:published_time</code> meta tag, and in <code>page-md.php</code> to display the formatted date under the title for <code>article</code> page types.</p>
+<hr/>
+<h2>Metadata Extraction</h2>
+<p>Defined in <code>required/vitalfunctions.php</code>.</p>
+<h3><code>extractValueFromPattern($pagename, $pattern)</code></h3>
+<p>Reads the file <code>pages/[pagename].html</code> and applies a regex pattern to extract a value from an HTML comment metadata block. Returns the trimmed match, or <code>null</code> if not found.</p>
+<pre><code class="language-php">$title = extractValueFromPattern("about", '/&lt;!--\s+pagetitle:(.*?)\s+--&gt;/s');
+</code></pre>
+<p>You generally won't need to call this directly — <code>vitalfunctions.php</code> calls it automatically for all standard metadata fields and stores the results in <code>$pagetitle</code>, <code>$pagelayout</code>, <code>$pagedate</code>, etc. It's documented here in case you want to define custom metadata fields in your page files and extract them in a theme or shortcode.</p>
+<p><strong>Adding a custom metadata field:</strong></p>
+<p>Add your comment to a page file:</p>
+<pre><code class="language-html">&lt;!-- mycustomfield: Some value --&gt;
+</code></pre>
+<p>Extract it in your theme or shortcode:</p>
+<pre><code class="language-php">$myvalue = extractValueFromPattern($pagename, '/&lt;!--\s+mycustomfield:(.*?)\s+--&gt;/s');
+</code></pre>

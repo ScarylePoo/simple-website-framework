@@ -1,0 +1,151 @@
+<!-- pagetitle: Page Layouts -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How to control the way your page looks using the pagelayout metadata field. -->
+<!-- pagekeywords: pagelayout, layout, page-html, page-md, notitle, template -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>Every page file has a <code>pagelayout</code> field in its metadata block. This tells the framework which layout template to use when rendering your page — controlling things like whether your title is displayed automatically, and whether your content is treated as HTML or Markdown.</p>
+
+<p>If you leave <code>pagelayout</code> blank, the framework defaults to <code>page-html</code>.</p>
+
+<hr/>
+
+<h2>Available Layouts</h2>
+
+<p>The framework ships with four layouts out of the box:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Layout name</th>
+            <th>Shows title?</th>
+            <th>Content type</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>page-html</code></td>
+            <td>Yes</td>
+            <td>HTML</td>
+        </tr>
+        <tr>
+            <td><code>page-html-notitle</code></td>
+            <td>No</td>
+            <td>HTML</td>
+        </tr>
+        <tr>
+            <td><code>page-md</code></td>
+            <td>Yes</td>
+            <td>Markdown</td>
+        </tr>
+        <tr>
+            <td><code>page-md-notitle</code></td>
+            <td>No</td>
+            <td>Markdown</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr/>
+
+<h2>What "Shows title?" means</h2>
+
+<p>The layouts that show a title automatically render your <code>pagetitle</code> metadata value as a large <code>&lt;h1&gt;</code> heading above your content — you don't need to write the heading yourself. On <code>article</code> type pages, the date and author are also shown beneath the title automatically.</p>
+
+<p>The <code>-notitle</code> variants skip this entirely and go straight to your content. Use these when you want full control over how the top of your page looks — for example, if you want a hero image, a custom styled heading, or no heading at all.</p>
+
+<hr/>
+
+<h2>What "Content type" means</h2>
+
+<p>The <strong>HTML</strong> layouts render your page content exactly as written. What you put in the file is what appears on the page — so you write standard HTML tags like <code>&lt;p&gt;</code>, <code>&lt;h2&gt;</code>, <code>&lt;ul&gt;</code>, and so on.</p>
+
+<p>The <strong>Markdown</strong> layouts pass your content through the Markdown parser first, converting it to HTML automatically. This is convenient for simpler text-heavy pages where you don't want to write tags by hand.</p>
+
+<p>Both content types support shortcodes.</p>
+
+<hr/>
+
+<h2>How to set a layout</h2>
+
+<p>Set the <code>pagelayout</code> field in your page's metadata block:</p>
+
+<pre>
+&lt;!-- pagetitle: My Page --&gt;
+&lt;!-- pagelayout: page-html --&gt;
+&lt;!-- pagedate: --&gt;
+&lt;!-- pageimage: --&gt;
+&lt;!-- pageexcerpt: --&gt;
+&lt;!-- pagekeywords: --&gt;
+&lt;!-- pageauthor: --&gt;
+&lt;!-- pagetype: --&gt;
+</pre>
+
+<p>Change <code>page-html</code> to whichever layout you want. The name must match the filename of a layout file in your active theme folder, without the <code>.php</code> extension.</p>
+
+<hr/>
+
+<h2>Creating your own layout</h2>
+
+<p>If the built-in layouts don't suit your needs, you can create your own. A layout file is just a PHP file that lives in your theme folder (e.g. <code>themes/skeleton/</code>). The framework will include whichever file matches the name you put in <code>pagelayout</code>.</p>
+
+<p>The simplest way to start is to copy an existing layout and modify it. For example, to create a layout called <code>page-landing</code>:</p>
+
+<ol>
+    <li>Copy <code>themes/skeleton/page-html.php</code> to <code>themes/skeleton/page-landing.php</code></li>
+    <li>Edit <code>page-landing.php</code> to change the HTML structure however you like</li>
+    <li>Set <code>&lt;!-- pagelayout: page-landing --&gt;</code> in any page that should use it</li>
+</ol>
+
+<p>Inside your layout file, the following PHP variables are available to use:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Variable</th>
+            <th>Contains</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>$pagetitle</code></td>
+            <td>The page title from metadata</td>
+        </tr>
+        <tr>
+            <td><code>$pagename</code></td>
+            <td>The URL slug of the current page</td>
+        </tr>
+        <tr>
+            <td><code>$pagedate</code></td>
+            <td>The publication date</td>
+        </tr>
+        <tr>
+            <td><code>$pageauthor</code></td>
+            <td>The page author</td>
+        </tr>
+        <tr>
+            <td><code>$pagetype</code></td>
+            <td>The page type (e.g. <code>article</code>, <code>website</code>)</td>
+        </tr>
+        <tr>
+            <td><code>$WebsiteTitle</code></td>
+            <td>The site name from config</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>To render the page's content, read the file and echo it — exactly as the built-in layouts do:</p>
+
+<pre>
+&lt;?php
+    $filename = file_get_contents("./pages/" . $pagename . ".html");
+    $parsed_content = parse_shortcodes($filename);
+    echo $parsed_content; // for HTML content
+    // or: echo from_markdown($parsed_content); // for Markdown content
+?&gt;
+</pre>
+
+<p>Your layout file will be included in the middle of the page — the theme's <code>header.php</code> runs before it, and <code>footer.php</code> runs after, so you don't need to worry about the navigation, the <code>&lt;head&gt;</code> block, or the footer.</p>

@@ -1,62 +1,99 @@
-<!-- pagetitle:Adding Plugins -->
-<!-- pagelayout:page-md -->
-<!-- pagedate: -->
-<!-- pageimage:pages/posts/images/plugins.webp -->
-<!-- pageexcerpt:To seamlessly add a new plugin to the existing structure, follow these steps. -->
-<!-- pagekeywords:Plugin, Structure, File, PHP, CSS, JavaScript, Inclusion, Section, Conditional, Loading, Mechanism, Configuration, Variable, True, Enabled, Include, Files, Concatenate, Script, End, Page, Test, Changes, Development, Environment, Integration, Consistency, Existing, Code, Best Practices, Organizing, Stylesheets -->
-<!-- pageauthor:Scary le Poo -->
-<!-- pagetype:website -->
+<!-- pagetitle: Adding Plugins -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: pages/posts/images/plugins.webp -->
+<!-- pageexcerpt: How the plugin system works and how to integrate your own plugins into the framework. -->
+<!-- pagekeywords: plugins, jquery, pluginCalledBelowContent, javascript, css, integration -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
 
-## Prepare Your Plugin
-   - Make sure your plugin files (CSS, JavaScript, etc.) are organized and ready to be included.
-   - Ensure your plugin is compatible with the structure and requirements of the existing code.
+<p>The framework uses a manual plugin integration system. Plugins are loaded via <code>plugins/plugins.php</code>, which is included in the <code><head></code> of every page when <code>$loadplugins</code> is set to <code>true</code> in <code>config/config.php</code>.</p>
+<hr/>
+<h2>How the Plugin System Works</h2>
+<p><code>plugins/plugins.php</code> does two things:</p>
+<p><strong>1. Loads assets in the <code><head></code></strong> — CSS files and any scripts that need to load early are output directly as the file is included.</p>
+<p><strong>2. Builds a <code>$pluginCalledBelowContent</code> string</strong> — many JavaScript plugins need to run after the page content exists in the DOM, not in the <code><head></code>. Rather than output these scripts immediately, plugins append their <code><script></code> tags to the <code>$pluginCalledBelowContent</code> variable. The theme's <code>footer.php</code> then echoes this variable at the very bottom of the page, just before <code></body></code>.</p>
+<p>This two-phase approach ensures scripts don't block page rendering and that jQuery-dependent code runs after jQuery has loaded.</p>
+<hr/>
+<h2>Built-in Plugins</h2>
+<p>The following plugins are included and configurable via <code>config/config.php</code>:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Config variable</th>
+            <th>Plugin</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>$jQuery</code></td>
+            <td>jQuery 3.7.1 + Migrate 3.4.0</td>
+            <td>Required by most other plugins</td>
+        </tr>
+        <tr>
+            <td><code>$anchorLinkAutoClass</code></td>
+            <td>Adds <code>anchor-top-margin</code> class to all links</td>
+            <td>Used for smooth scroll margin</td>
+        </tr>
+        <tr>
+            <td><code>$anchorLinkCurrentURLRewrite</code></td>
+            <td>Rewrites <code>#anchor</code> links to include full page URL</td>
+            <td>Required for anchor links to work</td>
+        </tr>
+        <tr>
+            <td><code>$metaInfoBoxRewriteURL</code></td>
+            <td>Appends <code>?meta=yes</code> to all links when in meta mode</td>
+            <td>Only active when <code>?meta=yes</code> is in the URL</td>
+        </tr>
+        <tr>
+            <td><code>$fontAwesome</code></td>
+            <td>Font Awesome 4.7.0 icon library</td>
+            <td>CSS only, no JS</td>
+        </tr>
+        <tr>
+            <td><code>$yBox</code></td>
+            <td>yBox lightbox</td>
+            <td>Loaded below content via <code>$pluginCalledBelowContent</code></td>
+        </tr>
+    </tbody>
+</table>
+<hr/>
+<h2>Adding Your Own Plugin</h2>
+<p><strong>Step 1 — Add your plugin files</strong></p>
+<p>Place your plugin's CSS, JS, and any other assets somewhere accessible, typically inside <code>plugins/your-plugin-name/</code>.</p>
+<p><strong>Step 2 — Add a config variable</strong></p>
+<p>In <code>config/config.php</code>, add a variable to control whether your plugin is active:</p>
+<pre><code class="language-php">$myPlugin = true;
+</code></pre>
+<p><strong>Step 3 — Add to <code>plugins/plugins.php</code></strong></p>
+<p>Open <code>plugins/plugins.php</code> and add a conditional block. Use the in-head pattern for CSS and early-loading scripts:</p>
+<pre><code class="language-php">&lt;?php if ($myPlugin == true) { ?&gt;
+    &lt;link type="text/css" href="plugins/my-plugin/my-plugin.css" rel="stylesheet" /&gt;
+&lt;?php } ?&gt;
+</code></pre>
+<p>For JavaScript that needs to run after page content — which is most jQuery plugins — use the <code>$pluginCalledBelowContent</code> pattern instead. Note that single quotes inside the string must be escaped with a backslash:</p>
+<pre><code class="language-php">&lt;?php if ($myPlugin == true) {
+    $myPluginContent = '
+    &lt;script src="plugins/my-plugin/my-plugin.js"&gt;&lt;/script&gt;
+    &lt;script&gt;
+        jQuery(document).ready(function($) {
+            $(\'.my-selector\').myPlugin();
+        });
+    });
+    &lt;/script&gt;
+    ';
+    $pluginCalledBelowContent = $pluginCalledBelowContent . $myPluginContent;
+} ?&gt;
+</code></pre>
+<p><strong>Step 4 — Test</strong></p>
+<p>Load any page and check that your plugin initialises correctly. If you see JavaScript errors, double-check that all single quotes inside the <code>$myPluginContent</code> string are properly escaped with a backslash (<code>\'</code>).</p>
+<hr/>
+<h2>Important: Escaping Quotes</h2>
+<p>Because plugin scripts are stored as PHP strings, any single quotes inside the JavaScript must be escaped. This is the most common source of errors when adding plugins:</p>
+<pre><code class="language-php">// Wrong — will break the PHP string
+$content = '&lt;script&gt;var x = 'hello';&lt;/script&gt;';
 
-### Open the File
-   - Open the PHP file where you want to add your plugin. In this case, it is located at plugins/plugins.php
-
-### Identify Plugin Inclusion Section
-   - Locate the section in the file where other plugins are being included. Plugins are conditionally included based on certain configuration variables like `$jQuery`, `$anchorLinkAutoClass`, `$beforeAndAfterSlider`, `$fontAwesome`, and `$yBox`.
-
-### Understand Conditional Loading
-   - Understand the conditional loading mechanism. Each plugin is loaded if its corresponding configuration variable is set to `true`.
-
-### Add Configuration Variable
-   - Decide on a unique name for your plugin and define a new configuration variable similar to existing ones. For example:
-     ```php
-     <?php $myPluginEnabled = true; ?>
-     ```
-   - Ensure to set this variable to `true` if you want your plugin to be loaded.
-
-### Include CSS and JavaScript
-   - Inside the conditional block for your plugin, include the necessary CSS and JavaScript files.
-     ```php
-     <?php if ($myPluginEnabled == true) { ?>
-         <!-- Include CSS file(s) -->
-         <link type="text/css" href="path/to/your-plugin.css" rel="stylesheet" />
-         
-         <!-- Include JavaScript file(s) -->
-         <script src="path/to/your-plugin.js"></script>
-     <?php } ?>
-     ```
-
-### Concatenate Script if Necessary
-   - If your plugin requires JavaScript to be included at the end of the page, concatenate it with the `$pluginCalledBelowContent` variable.
-     ```php
-     <?php if ($myPluginEnabled == true) { ?>
-         <?php $myPluginScriptContent = '
-             <script>
-                 // Your plugin-specific JavaScript code goes here
-             </script>
-         ';
-         $pluginCalledBelowContent = $pluginCalledBelowContent . $myPluginScriptContent;
-         ?>
-     <?php } ?>
-     ```
-
-### Test Your Changes
-   - Save the file and test your changes on a development environment to ensure your plugin is loaded and functioning correctly.
-   
-### Add your Configuration Variable
-   - Make sure to add your Configuration Variable to config/config.php
-
-By following these steps, you should be able to integrate your own plugin into the provided file structure effectively. Remember to maintain consistency with the existing code structure and adhere to best practices for organizing and including scripts and stylesheets.
+// Correct — single quotes escaped
+$content = '&lt;script&gt;var x = \'hello\';&lt;/script&gt;';
+</code></pre>

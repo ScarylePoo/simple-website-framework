@@ -1,0 +1,113 @@
+<!-- pagetitle: Shortcodes -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: The built-in shortcode system lets you embed dynamic content inside any page file. -->
+<!-- pagekeywords: shortcodes, rss, php, pre, dynamic content, shortcode-parser -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The framework includes a shortcode system that lets you embed dynamic functionality directly inside your page content files. Shortcodes are processed before Markdown rendering, so they work in both Markdown and HTML page layouts.</p>
+<p>The shortcode parser lives in <code>required/shortcode-parser.php</code> and is loaded automatically on every request. Individual shortcode functions are stored in <code>required/shortcode-functions/</code> as separate PHP files, which are all auto-loaded by the parser.</p>
+<hr/>
+<h2>Shortcode Syntax</h2>
+<p>Shortcodes follow a simple syntax. They can be <strong>self-closing</strong> (no content between tags) or <strong>enclosing</strong> (wrapping content between an opening and closing tag).</p>
+<p><strong>Self-closing with attributes:</strong></p>
+<pre>&#91;shortcode_name attribute="value"&#93;</pre>
+<p><strong>Enclosing with content:</strong></p>
+<pre>&#91;shortcode_name&#93;
+content goes here
+&#91;/shortcode_name&#93;</pre>
+<p><strong>Enclosing with both attributes and content:</strong></p>
+<pre>&#91;shortcode_name attribute="value"&#93;
+content goes here
+&#91;/shortcode_name&#93;</pre>
+<hr/>
+<h2>Built-in Shortcodes</h2>
+<h3><code>&#91;rss&#93;</code> — Embed an RSS Feed</h3>
+<p>Fetches an external RSS feed and renders it as an HTML list of items. Useful for displaying posts from another site, a podcast feed, or your own site's RSS output.</p>
+<p><strong>Attributes:</strong></p>
+<table>
+    <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Required</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>url</code></td>
+            <td>Yes</td>
+            <td>The full URL of the RSS feed to fetch</td>
+        </tr>
+        <tr>
+            <td><code>limit</code></td>
+            <td>No</td>
+            <td>Maximum number of items to display. Defaults to all items</td>
+        </tr>
+    </tbody>
+</table>
+<p><strong>Example — fetch 5 items from a feed:</strong></p>
+<pre>&#91;rss url="https://example.com/?rss" limit="5"&#93;</pre>
+<p><strong>Output structure:</strong></p>
+<p>Each feed item is wrapped in a <code>&lt;div class="rss-item"&gt;</code> and contains:</p>
+<ul>
+    <li><code>&lt;div class="rss-title"&gt;</code> — linked item title</li>
+    <li><code>&lt;div class="rss-date"&gt;</code> — publication date</li>
+    <li><code>&lt;div class="rss-image"&gt;</code> — thumbnail image (if the feed provides one via <code>enclosure</code> or <code>media:content</code>)</li>
+    <li><code>&lt;div class="rss-description"&gt;</code> — item excerpt/description</li>
+</ul>
+<p>The whole output is wrapped in <code>&lt;div class="rss-feed-container"&gt;</code> which you can target with CSS.</p>
+<hr/>
+<h3><code>&#91;pre&#93;</code> — Preformatted Text Block</h3>
+<p>Wraps content in a <code>&lt;pre&gt;</code> tag with HTML entities escaped. Use this to display code or any content where whitespace and special characters should be preserved exactly as written.</p>
+<p><strong>Example:</strong></p>
+<pre>&#91;pre&#93;
+function hello() {
+    echo "Hello, world!";
+}
+&#91;/pre&#93;</pre>
+<p>This is equivalent to writing <code>&lt;pre&gt;</code> directly in an HTML layout, but is more convenient in Markdown pages where raw HTML blocks can sometimes be tricky.</p>
+<hr/>
+<h3><code>&#91;php&#93;</code> — Execute PHP Code</h3>
+<p>Evaluates PHP code and inserts the output into the page at the point where the shortcode appears. The code runs via <code>eval()</code> inside an output buffer, so anything you <code>echo</code> will appear in the page.</p>
+<p><strong>Example:</strong></p>
+<pre>&#91;php&#93;
+echo "The current year is: " . date('Y');
+&#91;/php&#93;</pre>
+<p><strong>Important notes:</strong></p>
+<ul>
+    <li>This shortcode executes arbitrary PHP. Only use it in page files you control. Anyone with write access to <code>pages/</code> can run any PHP code on the server using this shortcode.</li>
+    <li>There is no sandboxing or function whitelist.</li>
+    <li>Syntax errors in the evaluated code will cause a fatal error on that page.</li>
+</ul>
+<hr/>
+<h2>Adding a New Shortcode</h2>
+<p>New shortcodes are easy to add. All files in <code>required/shortcode-functions/</code> are auto-loaded, so you just need to:</p>
+<p><strong>1. Create a new file</strong> in <code>required/shortcode-functions/</code>, e.g. <code>my-shortcode.php</code>.</p>
+<p><strong>2. Define your function</strong> inside it. The function receives two arguments: an associative array of attributes, and a string of inner content (empty string if the shortcode is self-closing):</p>
+<pre><code class="language-php">&lt;?php
+function shortcode_myshortcode($attributes, $content) {
+    $color = isset($attributes['color']) ? $attributes['color'] : 'blue';
+    return '&lt;span style="color:' . htmlspecialchars($color) . '"&gt;' . htmlspecialchars($content) . '&lt;/span&gt;';
+}
+?&gt;
+</code></pre>
+<p><strong>3. Register the shortcode</strong> in the <code>$shortcodes</code> array inside <code>required/shortcode-parser.php</code>:</p>
+<pre><code class="language-php">$shortcodes = [
+    'rss' =&gt; 'shortcode_rss_feed',
+    'pre' =&gt; 'shortcode_pre',
+    'php' =&gt; 'shortcode_php',
+    'myshortcode' =&gt; 'shortcode_myshortcode', // add this line
+];
+</code></pre>
+<p><strong>4. Use it in any page file:</strong></p>
+<pre>&#91;myshortcode color="red"&#93;Hello!&#91;/myshortcode&#93;</pre>
+<hr/>
+<h2>Helper Functions Available to Shortcodes</h2>
+<p>Since shortcode functions are loaded within the framework's context, they have access to all PHP functions defined elsewhere in the framework, including:</p>
+<ul>
+    <li><code>from_markdown($string)</code> — converts a Markdown string to HTML</li>
+    <li><code>formatDate($date, $format)</code> — normalises a date string (see <a href="/documentation/developers/helperfunctions">Helper Functions</a>)</li>
+</ul>

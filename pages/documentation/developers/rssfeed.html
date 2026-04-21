@@ -1,0 +1,101 @@
+<!-- pagetitle: The RSS Feed -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: The framework generates an RSS feed automatically from your posts. Here's how it works and how to access it. -->
+<!-- pagekeywords: rss, feed, posts, syndication, rss_generator -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The framework automatically generates an RSS 2.0 feed from all posts in the <code>pages/posts/</code> directory. No configuration is needed — the feed is available as soon as you have posts with the required metadata.</p>
+<hr/>
+<h2>Accessing the Feed</h2>
+<p>Append <code>?rss</code> to your site's root URL:</p>
+<pre><code>https://example.com/?rss
+</code></pre>
+<p>The feed is generated dynamically on each request. It reads all <code>.html</code> files in <code>pages/posts/</code>, extracts their metadata, sorts them by date (newest first), and outputs a valid RSS 2.0 XML document.</p>
+<hr/>
+<h2>What Gets Included</h2>
+<p>Only posts that have <strong>all four</strong> of the following metadata fields populated are included in the feed:</p>
+<ul>
+    <li><code>pagetitle</code></li>
+    <li><code>pagedate</code></li>
+    <li><code>pageexcerpt</code></li>
+    <li><code>pageimage</code></li>
+</ul>
+<p>Posts missing any of these four fields are silently skipped. This is intentional — incomplete posts won't pollute your feed.</p>
+<hr/>
+<h2>Feed Item Structure</h2>
+<p>Each item in the feed contains:</p>
+<table>
+    <thead>
+        <tr>
+            <th>RSS Element</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code><title></code></td>
+            <td><code>pagetitle</code> metadata</td>
+        </tr>
+        <tr>
+            <td><code><link></code></td>
+            <td><code>$WebsiteURL/posts/[filename]</code></td>
+        </tr>
+        <tr>
+            <td><code><description></code></td>
+            <td><code>pageexcerpt</code> metadata</td>
+        </tr>
+        <tr>
+            <td><code><pubDate></code></td>
+            <td><code>pagedate</code> metadata, formatted as RSS date</td>
+        </tr>
+        <tr>
+            <td><code><enclosure></code></td>
+            <td><code>pageimage</code> metadata (or <code>$WebsiteImage</code> as fallback), with MIME type and <code>length="0"</code></td>
+        </tr>
+    </tbody>
+</table>
+<hr/>
+<h2>Channel-Level Information</h2>
+<p>The feed's channel metadata is drawn directly from <code>config/config.php</code>:</p>
+<table>
+    <thead>
+        <tr>
+            <th>RSS Channel Element</th>
+            <th>Config variable</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code><title></code></td>
+            <td><code>$WebsiteTitle</code></td>
+        </tr>
+        <tr>
+            <td><code><link></code></td>
+            <td><code>$WebsiteURL</code></td>
+        </tr>
+        <tr>
+            <td><code><description></code></td>
+            <td><code>$WebsiteDescription</code></td>
+        </tr>
+        <tr>
+            <td><code><image><url></code></td>
+            <td><code>$WebsiteImage</code></td>
+        </tr>
+    </tbody>
+</table>
+<hr/>
+<h2>Embedding Your Feed in a Page</h2>
+<p>You can display your own feed (or any other RSS feed) on a page using the <code>[rss]</code> shortcode:</p>
+<pre><code>[rss url="https://example.com/?rss" limit="5"]
+</code></pre>
+<p>This will render the five most recent posts as an HTML block. See the <a href="/documentation/developers/shortcodes">Shortcodes</a> page for full details on the <code>[rss]</code> shortcode and its output structure.</p>
+<hr/>
+<h2>How the Feed is Generated</h2>
+<p>The feed is handled by <code>rss_generator.php</code> in the site root. It is triggered by the <code>?rss</code> query parameter check at the very top of <code>index.php</code> — if the parameter is present, the RSS generator is included and execution stops, so no page rendering occurs.</p>
+<p>The generator uses the same HTML comment metadata pattern as the rest of the framework:</p>
+<pre><code>/&lt;!--\s+pagetitle:(.*?)\s+--&gt;/s
+</code></pre>
+<p>This means all post metadata must follow the standard comment format for the post to be picked up by the feed.</p>

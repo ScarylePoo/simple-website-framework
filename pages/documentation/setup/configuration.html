@@ -1,0 +1,135 @@
+<!-- pagetitle: Configuration Reference -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: A complete reference for every option available in config/config.php. -->
+<!-- pagekeywords: configuration, config.php, settings, options, reference -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>All site-wide configuration lives in <code>config/config.php</code>. This file is loaded at the very start of every request. A copy called <code>config-example.php</code> is included in the repository as a safe starting point — copy it to <code>config.php</code> before making changes.</p>
+<hr/>
+<h2>Core Settings</h2>
+<h3><code>$enableHTMLCacheServe</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>false</code></p>
+<p>Enables the server-side HTML cache. When <code>true</code>, rendered pages are saved as static <code>.html</code> files and served directly on subsequent requests until the cache expires.</p>
+<p>Set to <code>false</code> during development so you always see your latest changes. Enable it for production to improve performance.</p>
+<pre><code class="language-php">$enableHTMLCacheServe = false;
+</code></pre>
+<p>See the <a href="/documentation/developers/caching">Caching</a> page for full details.</p>
+<hr/>
+<h3><code>$SSL</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>false</code></p>
+<p>Tells the framework whether the site is served over HTTPS. Setting this to <code>true</code> causes all internally constructed URLs to use the <code>https://</code> protocol and triggers a redirect if the visitor arrives over HTTP.</p>
+<pre><code class="language-php">$SSL = true;
+</code></pre>
+<hr/>
+<h3><code>$ForceWWW</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>When <code>true</code>, the framework redirects any request that does not include <code>www.</code> to the <code>www.</code> version of the URL (and vice versa when <code>false</code>). This keeps your canonical URL consistent.</p>
+<pre><code class="language-php">$ForceWWW = true;
+</code></pre>
+<hr/>
+<h3><code>$WebsiteURL</code></h3>
+<p><strong>Type:</strong> <code>string</code></p>
+<p>Your domain name, <strong>without</strong> a protocol prefix and <strong>without</strong> a trailing slash. The framework combines this with <code>$SSL</code> and <code>$ForceWWW</code> to construct the full canonical URL used in redirects and meta tags.</p>
+<pre><code class="language-php">$WebsiteURL = "example.com";
+</code></pre>
+<hr/>
+<h2>Site Identity</h2>
+<h3><code>$WebsiteTitle</code></h3>
+<p><strong>Type:</strong> <code>string</code></p>
+<p>The name of your site. Appears in browser tab titles (appended after the page title), OpenGraph <code>og:site_name</code>, and the hero banner in the skeleton theme.</p>
+<pre><code class="language-php">$WebsiteTitle = "My Website";
+</code></pre>
+<hr/>
+<h3><code>$WebsiteDescription</code></h3>
+<p><strong>Type:</strong> <code>string</code></p>
+<p>The default meta description for any page that does not define its own <code>pageexcerpt</code>. Also used as the OpenGraph description fallback.</p>
+<pre><code class="language-php">$WebsiteDescription = "A short description of my website.";
+</code></pre>
+<hr/>
+<h3><code>$WebsiteAuthor</code></h3>
+<p><strong>Type:</strong> <code>string</code></p>
+<p>The default author name used in the <code><meta name="author"></code> tag for any page that does not define its own <code>pageauthor</code>.</p>
+<pre><code class="language-php">$WebsiteAuthor = "Jane Smith";
+</code></pre>
+<hr/>
+<h3><code>$WebsiteKeywords</code></h3>
+<p><strong>Type:</strong> <code>string</code></p>
+<p>A comma-separated list of default keywords used in <code><meta name="keywords"></code> for pages that do not define their own <code>pagekeywords</code>.</p>
+<pre><code class="language-php">$WebsiteKeywords = "website, framework, php, simple";
+</code></pre>
+<hr/>
+<h3><code>$WebsiteImage</code></h3>
+<p><strong>Type:</strong> <code>string</code></p>
+<p>Path to the default image (relative to the site root) used in the OpenGraph <code>og:image</code> tag for pages that do not define their own <code>pageimage</code>. Also used as the default image in the RSS feed.</p>
+<pre><code class="language-php">$WebsiteImage = "images/my-default-image.webp";
+</code></pre>
+<hr/>
+<h2>Language & Locale</h2>
+<h3><code>$WebsiteLanguage</code></h3>
+<p><strong>Type:</strong> <code>string</code> | <strong>Example:</strong> <code>"en"</code></p>
+<p>The primary language code used in the <code><html lang=""></code> attribute.</p>
+<h3><code>$WebsiteLanguageCountry</code></h3>
+<p><strong>Type:</strong> <code>string</code> | <strong>Example:</strong> <code>"US"</code></p>
+<p>The country code used in a secondary <code>lang</code> attribute.</p>
+<h3><code>$WebsiteLanguageLocale</code></h3>
+<p><strong>Type:</strong> <code>string</code> | <strong>Example:</strong> <code>"en_US"</code></p>
+<p>The locale string used in the OpenGraph <code>og:locale</code> tag.</p>
+<pre><code class="language-php">$WebsiteLanguage = "en";
+$WebsiteLanguageCountry = "US";
+$WebsiteLanguageLocale = "en_US";
+</code></pre>
+<hr/>
+<h2>Theme</h2>
+<h3><code>$theme</code></h3>
+<p><strong>Type:</strong> <code>string</code> | <strong>Default:</strong> <code>"skeleton"</code></p>
+<p>The name of the active theme. Must match a folder name inside <code>themes/</code>. Changing this value switches the entire site to a different theme.</p>
+<pre><code class="language-php">$theme = "skeleton";
+</code></pre>
+<hr/>
+<h3><code>$showhomepagetitle</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Controls whether the page title <code><h1></code> is shown on the home page. On all other pages the title is always shown. Set to <code>false</code> if your home page design handles the heading itself.</p>
+<pre><code class="language-php">$showhomepagetitle = true;
+</code></pre>
+<hr/>
+<h2>Plugins</h2>
+<h3><code>$loadplugins</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Master switch for the plugin system. When <code>false</code>, <code>plugins/plugins.php</code> is never included and no plugin code runs — including jQuery. Set to <code>false</code> only if you are certain you need nothing from the plugin system.</p>
+<pre><code class="language-php">$loadplugins = true;
+</code></pre>
+<hr/>
+<h3><code>$jQuery</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Loads jQuery 3.7.1 and jQuery Migrate 3.4.0. <strong>Setting this to <code>false</code> will break any plugin or page script that depends on jQuery</strong>, including the StellarNav navigation system.</p>
+<hr/>
+<h3><code>$anchorLinkAutoClass</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Adds the CSS class <code>anchor-top-margin</code> to every anchor link on the page via JavaScript. This is used to apply <code>scroll-margin-top</code> so that anchor targets are not hidden behind the sticky navigation bar. <strong>Disabling this will break smooth scroll behaviour.</strong></p>
+<hr/>
+<h3><code>$anchorLinkCurrentURLRewrite</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Rewrites all <code>href="#..."</code> anchor links so they include the full current page URL (e.g. <code>/about#section</code> instead of just <code>#section</code>). This is required for anchor links to work correctly when the framework handles routing through <code>index.php</code>. <strong>Disabling this will break all in-page anchor links.</strong></p>
+<hr/>
+<h3><code>$metaInfoBoxRewriteURL</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>When the <code>?meta=yes</code> debug overlay is active, this option appends <code>?meta=yes</code> to every link on the page so you can browse the site without losing the overlay. Only activates when <code>?meta=yes</code> is present in the URL; has no effect otherwise.</p>
+<hr/>
+<h3><code>$fontAwesome</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Loads Font Awesome 4.7.0. Set to <code>false</code> if you are not using Font Awesome icons and want to reduce page weight.</p>
+<hr/>
+<h3><code>$yBox</code></h3>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
+<p>Loads the yBox lightbox plugin. Required if you want clickable image lightboxes on your pages.</p>
+<hr/>
+<h2>Footer</h2>
+<h3><code>$numberFooterColumns</code></h3>
+<p><strong>Type:</strong> <code>int</code> | <strong>Default:</strong> <code>3</code></p>
+<p>The number of columns to display in the footer. The framework looks for files named <code>footer1.html</code>, <code>footer2.html</code>, etc. inside <code>pages/footer/</code>, up to this number. If a file is missing, the column displays an error message.</p>
+<pre><code class="language-php">$numberFooterColumns = 3;
+</code></pre>
+<p>See <a href="/documentation/developers/footercolumns">Footer Columns</a> for details on formatting footer files.</p>

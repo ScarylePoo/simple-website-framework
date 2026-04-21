@@ -1,38 +1,54 @@
-<!-- pagetitle:Caching Pages -->
-<!-- pagelayout:page-md -->
-<!-- pagedate: -->
-<!-- pageimage: --> 
-<!-- pageexcerpt:Caching massively speeds up your website by serving up static html files. -->
-<!-- pagekeywords:Caching,Web data,Browser cache,Proxy cache,Content Delivery Network (CDN) cache,Server cache,Performance,Bandwidth conservation,Scalability,User experience -->
-<!-- pageauthor:Scary le Poo -->
-<!-- pagetype:website -->
+<!-- pagetitle: Caching -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How the framework's server-side HTML cache works, how to configure it, and how to bust it during development. -->
+<!-- pagekeywords: caching, performance, html cache, cache invalidation, production -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
 
-## Understanding Caching
-
-Caching involves temporarily storing web data to expedite future access. When you visit a webpage, your browser fetches various elements from the server. Instead of retrieving these components each time, caching stores them locally, reducing loading times and enhancing performance.
-
-### Types of Caching
-
-1. **Browser Cache:** Stores webpage elements locally for quicker access during subsequent visits.
-  
-2. **Proxy Cache:** Intermediate servers cache web content, reducing load on origin servers and accelerating content delivery.
-  
-3. **Content Delivery Network (CDN) Cache:** CDNs cache web content across distributed servers, optimizing speed and reliability.
-  
-4. **Server Cache:** Websites implement caching mechanisms on servers to store frequently accessed data, speeding up response times.
-
-### Importance of Caching
-
-1. **Enhanced Performance:** Faster loading times and smoother browsing experiences result from locally stored data.
-  
-2. **Bandwidth Conservation:** Minimizes network bandwidth consumption by reducing data transfer between client and server.
-  
-3. **Improved Scalability:** Alleviates server load, ensuring smooth performance during high traffic periods.
-  
-4. **Reliability and Resilience:** Distributed caching enhances reliability, allowing access to content even if one server fails.
-  
-5. **Better User Experience:** Reduces latency, speeds up page loads, and ensures seamless navigation.
-
-### Conclusion
-
-Caching is essential for optimizing web performance, providing faster, smoother, and more efficient online experiences. The Simple Website Framework utilizes Server Caching (Type 4), generating HTML pages for each visit, with a default rebuild interval of every 5 hours. Caching settings can be adjusted in `/index.php` and `/required/top-cache.php`.
+<p>The framework includes a built-in server-side HTML cache. When enabled, fully rendered pages are saved as <code>.html</code> files on disk and served directly on subsequent requests, bypassing PHP rendering entirely until the cache expires.</p>
+<hr/>
+<h2>Enabling the Cache</h2>
+<p>Caching is controlled by a single variable in <code>config/config.php</code>:</p>
+<pre><code class="language-php">$enableHTMLCacheServe = true;
+</code></pre>
+<p>Set it to <code>false</code> during development (the default) so every request renders fresh. Enable it for production.</p>
+<hr/>
+<h2>How It Works</h2>
+<p>The cache is implemented across two files: <code>required/top-cache.php</code> (included near the top of <code>index.php</code>) and <code>required/bottom-cache.php</code> (included near the bottom).</p>
+<p><strong>On a cache miss</strong> (no cached file exists, or the cached file has expired):</p>
+<ol>
+    <li><code>top-cache.php</code> starts an output buffer with <code>ob_start()</code></li>
+    <li>The page renders normally through the full PHP stack</li>
+    <li><code>bottom-cache.php</code> writes the buffered output to a cache file on disk, then flushes it to the browser</li>
+</ol>
+<p><strong>On a cache hit</strong> (a valid, unexpired cache file exists):</p>
+<ol>
+    <li><code>top-cache.php</code> detects the file and serves it directly with <code>readfile()</code></li>
+    <li>Execution stops immediately — no Markdown parsing, no metadata extraction, no plugin loading</li>
+</ol>
+<hr/>
+<h2>Cache File Naming</h2>
+<p>Cache files are named based on the URL path of the request. The file is stored in the site root directory as <code>cached-[pagename].html</code>. For example, a request to <code>/about</code> produces <code>cached-about.html</code>.</p>
+<p>Query parameters (other than <code>?meta</code> and <code>?page</code>) are stripped before the cache filename is determined, so parameterised requests don't create duplicate cache entries.</p>
+<hr/>
+<h2>Cache Duration</h2>
+<p>The default cache lifetime is <strong>5 hours</strong> (18,000 seconds). To change this, edit the <code>$cachetime</code> variable in <code>required/top-cache.php</code>:</p>
+<pre><code class="language-php">$cachetime = 18000; // Seconds — 18000 = 5 hours
+</code></pre>
+<p>Adjust this to suit how frequently your content changes. A personal blog with occasional updates could safely use a much longer duration.</p>
+<hr/>
+<h2>Busting the Cache</h2>
+<p>During development, the simplest approach is to leave caching disabled entirely (<code>$enableHTMLCacheServe = false</code>).</p>
+<p>In production, if you need to force a page to regenerate immediately, delete the relevant <code>cached-*.html</code> file from the site root. The next request will render the page fresh and write a new cache file.</p>
+<p>To clear all cached pages at once:</p>
+<pre><code class="language-bash">rm cached-*.html
+</code></pre>
+<hr/>
+<h2>What the Cache Does Not Cover</h2>
+<ul>
+    <li>The <strong>RSS feed</strong> (<code>?rss</code>) bypasses the cache entirely — it is generated fresh on every request</li>
+    <li>The <strong><code>?meta=yes</code> debug overlay</strong> is preserved across cached requests because <code>?meta</code> is in the list of query parameters that are kept when determining the cache filename</li>
+    <li><strong>Paginated archive pages</strong> (<code>?page=2</code> etc.) are also preserved for the same reason</li>
+</ul>

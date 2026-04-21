@@ -47,8 +47,4 @@
 		/* yBox (Lightbox) */
         $yBox = true;
     }	
-	/* How many columns in the footer? */
-	/* The Footer files are md files in pages/footer. The names must be footer1.md, footer2.md, footer3.md, etc. They will be displayed in order from left to right. The footer will try to read as many files as you have number of footer columns set. */
-	
-	$numberFooterColumns = 3;	
 ?>

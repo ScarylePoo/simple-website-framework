@@ -1,0 +1,91 @@
+<!-- pagetitle: The Meta Debug Tool -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: The built-in ?meta=yes overlay lets you inspect every page's metadata as search engines see it. -->
+<!-- pagekeywords: meta, debug, seo, metadata, inspection, developer tools -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The framework includes a built-in metadata inspection overlay that lets you see exactly what SEO and OpenGraph information is being output for any page — without needing browser dev tools or external validators.</p>
+<hr/>
+<h2>Activating the Overlay</h2>
+<p>Append <code>?meta=yes</code> to any page URL on your site:</p>
+<pre><code>https://example.com/about?meta=yes
+https://example.com/posts/my-post?meta=yes
+</code></pre>
+<p><a href="documentation/developers/metatool?meta=yes">Click here to activate it on this page</a></p>
+<p>Click on the Home link on the Navigation bar to deactivate the Meta Tool.<p>
+<p>A panel will appear on the page showing all resolved metadata values for that page.</p>
+<hr/>
+<h2>What the Overlay Shows</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Field</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>PageTitle</td>
+            <td>The resolved <code>pagetitle</code> value</td>
+        </tr>
+        <tr>
+            <td>Layout</td>
+            <td>The <code>pagelayout</code> value in use</td>
+        </tr>
+        <tr>
+            <td>Date</td>
+            <td>The resolved <code>pagedate</code> (normalised)</td>
+        </tr>
+        <tr>
+            <td>Page Image</td>
+            <td>The full URL of the resolved <code>pageimage</code></td>
+        </tr>
+        <tr>
+            <td>Excerpt</td>
+            <td>The resolved <code>pageexcerpt</code></td>
+        </tr>
+        <tr>
+            <td>Keywords</td>
+            <td>The resolved <code>pagekeywords</code></td>
+        </tr>
+        <tr>
+            <td>Author</td>
+            <td>The resolved <code>pageauthor</code></td>
+        </tr>
+        <tr>
+            <td>Type</td>
+            <td>The resolved <code>pagetype</code></td>
+        </tr>
+        <tr>
+            <td>Website Title</td>
+            <td>The <code>$WebsiteTitle</code> from config</td>
+        </tr>
+        <tr>
+            <td>Language/Country</td>
+            <td>The <code>$WebsiteLanguageCountry</code> from config</td>
+        </tr>
+        <tr>
+            <td>Current URL</td>
+            <td>The canonical URL of the current page</td>
+        </tr>
+        <tr>
+            <td>Language/Locale</td>
+            <td>The <code>$WebsiteLanguageLocale</code> from config</td>
+        </tr>
+    </tbody>
+</table>
+<p>All values shown are the <strong>resolved</strong> values — meaning fallbacks have already been applied. If a page doesn't set its own <code>pageexcerpt</code>, the overlay will show the site-wide <code>$WebsiteDescription</code> that will actually appear in search results, not a blank value.</p>
+<hr/>
+<h2>Browsing in Meta Mode</h2>
+<p>When <code>?meta=yes</code> is active and the <code>$metaInfoBoxRewriteURL</code> plugin option is enabled (the default), JavaScript automatically appends <code>?meta=yes</code> to every link on the page. This means you can click through your entire site and the overlay stays active on every page — no need to manually add the query string to each URL.</p>
+<p>To exit meta mode, click the <strong>Home</strong> link in the navigation bar. This navigates to the home page without the query string, which deactivates the overlay and restores all links to their normal targets.</p>
+<hr/>
+<h2>Implementation</h2>
+<p>The overlay is output by <code>required/metainfo.php</code>, which is included at the bottom of <code>header.php</code> in the skeleton theme. The file checks for <code>$_GET['meta']</code> and only renders the overlay div when the parameter is present.</p>
+<p>If you are building a custom theme, include this file in the same position in your <code>header.php</code> to retain the debug tool:</p>
+<pre><code class="language-php">&lt;?php include 'required/metainfo.php'; ?&gt;
+</code></pre>
+<p>The URL rewriting behaviour (keeping <code>?meta=yes</code> active as you navigate) is handled by the <code>$metaInfoBoxRewriteURL</code> plugin in <code>plugins/plugins.php</code>. This is enabled by default but can be turned off in <code>config/config.php</code> if needed.</p>

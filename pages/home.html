@@ -1,56 +1,38 @@
 <!-- pagetitle:Simple Website Framework -->
-<!-- pagelayout:page-md -->
+<!-- pagelayout:page-html -->
 <!-- pagedate: -->
 <!-- pageimage:images/laptop-computer-writing-technology-web-internet.webp -->
 <!-- pageexcerpt:Creating websites shouldn't be a daunting task. With Simple Website Framework, simplicity and functionality merge seamlessly. -->
 <!-- pagekeywords:simple,skeleton,framework,development,website,simplicity,security,ease,customize,flexibility -->
-<!-- pageauthor: -->
+<!-- pageauthor: Scary le Poo -->
 <!-- pagetype:website -->
 
-Creating websites shouldn't be a daunting task. Simple Website Framework emphasizes simplicity and functionality, offering you a hassle-free experience in website development.
+<p>Most website platforms have a problem: they're enormous. WordPress ships with around 2,500 files, is slow, bloated, and requires many more resources than should be necessary. Wix and Squarespace lock you into their ecosystem entirely. They're built to do everything, which means they do a lot of things you don't need, in ways you can't easily change.</p>
+<p>Simple Website Framework takes the opposite approach. It's a lean, flat-file PHP framework with no database, no bloat, and no black boxes. You can read every file, understand what it does, and change it if you want to. That's the whole point.</p>
 
-### **Building Blocks of Simplicity**
+<hr/>
+<h2>No database. No nonsense.</h2>
+<p>Pages are just HTML files sitting in a folder. Want a new page? Create a file. Want it gone? Delete it. The framework figures out routing automatically. No admin panel is required, no database entries to manage, no cache to flush after every change.</p>
 
-We've meticulously crafted every aspect to reflect a clean and minimalistic style. The result? Websites that look sleek and professional without unnecessary clutter.
+<hr/>
+<h2>Built for developers, usable by everyone</h2>
+<p>The skeleton theme gives developers a clean starting point they can actually understand. The template files are well-documented, configuration is centralised in a single file, and critical framework functions are kept separate from theme files so you can't accidentally break things while customising.</p>
+<p>For end users, adding content is as straightforward as writing an HTML file and dropping it into the right folder. A short metadata block at the top of each file handles the title, SEO, author, date, and layout. The framework fills in sensible defaults for anything you leave blank.</p>
 
-### **Streamlined Development Process**
+<hr/>
+<h2>Security by design</h2>
+<p>There's no built-in editor exposed to the web, which eliminates an entire category of attack surface. The framework validates every requested URL against the actual files on disk before serving anything, so unknown paths go nowhere. Security headers are set out of the box.</p>
 
-Say goodbye to tedious setup tasks. With the Simple Website Framework, we've already laid out the groundwork for you. Consider it your solid foundation. Now, instead of wrestling with the complexities of coding, you can focus on unleashing your creativity.
+<hr/>
+<h2>Extend it however you like</h2>
+<p>Plugins are loaded conditionally from a single file. jQuery, Font Awesome, a lightbox, smooth scrolling, etc. All toggleable with a single variable in the config. Adding your own plugin is a matter of dropping files in a folder and adding a conditional block. There's no registry, no compatibility matrix, no version conflicts.</p>
+<p>The theme system works the same way. Copy the skeleton theme, rename it, point the config at it, and start building. Your changes are isolated and framework updates won't touch your theme.</p>
 
-### **Effortless Page Creation**
+<hr/>
+<h2>SEO included, not bolted on</h2>
+<p>Every page gets a full set of meta tags and OpenGraph properties automatically, drawn from its metadata block and your site-wide config defaults. A built-in debug tool lets you inspect exactly what any page is outputting; just append <code>?meta=yes</code> to any URL (you can even do it on this site).</p>
 
-Creating pages and posts is a breeze. We've leveraged Markdown to simplify the process. Just place your Markdown files in the designated folders, and voilà—they automatically become linkable pages. Navigation options? Also Markdown-based, providing an intuitive way to structure your website.
-
-### **Flexibility at Your Fingertips**
-
-Our framework features an easy-to-understand templating system. Whether you're a novice developer or a seasoned pro, customizing your website is a breeze. Extend its functionality effortlessly, tailoring it to your unique vision.
-
-### **12 Column Grid System for Easy Content Positioning**
-
-Positioning content has never been simpler. Our 12-column grid system allows you to arrange elements with precision. Whether you're creating a landing page or a complex layout, our grid ensures optimal alignment every time.
-
-### **Clone and Customize**
-
-Kickstart your projects using our base theme. Developers can clone it and create their own themes, significantly reducing development time and effort. The possibilities are endless, allowing you to tailor your website exactly as you envision.
-
-### **Built for Security**
-
-Safety is paramount. By forgoing an integral built-in editor, we minimize the risk of penetration attacks. Our framework is hardened against security threats, ensuring peace of mind for you and your users[^1].
-
-[^1]: There actually is an editor, but it is a php based file manager and editor that is kept separate from the site itself and it is completely optional.
-
-### **SEO-Optimized**
-
-Stay ahead in the digital landscape. Our SEO-ready framework—from optimized page structures to metadata management—is primed for maximum visibility and performance in search engine results.
-
-### **Extend with Ease**
-
-Enhance your website's functionality using our easy-to-use, extendable plugin system. Whether you're adding new features or integrating third-party plugins, our framework provides a seamless experience without compromising security or stability.
-
-### **Editor for Your Convenience**
-
-While an optional editor is available, it remains separate from the core framework. It serves primarily as a standalone tool, offering advanced editing and file management capabilities alongside your website. Rest assured, your files are secure.
-
-### **Experience the Ease**
-
-The Simple Website Framework is designed with you in mind—whether you're a hobbyist website owner or a novice developer. Enjoy a user-friendly experience that simplifies the website development process.
+<hr/>
+<h2>Who it's for</h2>
+<p>Simple Website Framework is for developers who want control without complexity. People who'd rather understand their stack than fight it. It's also a solid fit for small - medium sites and personal projects where a full CMS is overkill but you still want clean URLs, SEO, a blog, and a proper theme system. There is nothing keeping it from being suitable for a massive site, for that matter. It's all a matter of scope and how you want to handle it.</p>
+<p>If you've ever looked at a WordPress install and thought "there has to be a simpler way"... this is the simpler way.</p>

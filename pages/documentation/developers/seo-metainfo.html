@@ -1,51 +1,121 @@
-<!-- pagetitle:Search Engine Optimization and Metainfo -->
-<!-- pagelayout:page-md -->
-<!-- pagedate: -->
-<!-- pageimage: --> 
-<!-- pageexcerpt:Search Engine Optimization is built in! It also takes care of a lot of things for you. -->
-<!-- pagekeywords: -->
-<!-- pageauthor:Scary le Poo -->
-<!-- pagetype:website -->
+<!-- pagetitle: SEO and Metainfo -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How the framework handles SEO and OpenGraph metadata, what every field does, and how fallbacks work. -->
+<!-- pagekeywords: seo, metadata, opengraph, meta tags, pagetitle, pageimage, pageexcerpt -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
 
-## SEO Integration Documentation
-
-### Introduction
-Search Engine Optimization (SEO) is an integral part of the framework, seamlessly incorporated to enhance website visibility and performance across various search engines. This documentation outlines the framework's SEO features and provides guidelines for optimizing page metadata.
-
-### Header Tags
-Upon inspecting the `header.php` theme file, you'll notice a dedicated section for header tags. These tags play a crucial role not only in standard SEO practices but also in providing OpenGraph information. The framework includes fallback mechanisms for cases where information is absent. Each page expects a specific set of metadata, most of which defaults to predefined values if not explicitly provided.
-
-### Metadata Defaults
-It is recommended to customize information for each page to optimize SEO performance. Even seemingly minor elements like page images significantly impact SEO. For posts, the impact is amplified due to their specialized nature.
-
-#### Default Metadata Values:
-- **Page Title:** Defaults to the name of the page file.
-- **Page Layout:** Defaults to 'page'.
-- **Page Date:** If not specified, defaults to the date from the file.
-- **Page Image:** Filled from `websiteimage` defined in `config.php`.
-- **Page Excerpt:** Falls back to the website description set in `config.php`.
-- **Page Keywords:** Falls back on website keywords from `config.php`.
-- **Page Author:** Falls back on the website author set in `config.php`.
-- **Page Type:** Falls back on website settings.
-
-```
-<!-- pagetitle: -->
-<!-- pagelayout: -->
-<!-- pagedate: -->
-<!-- pageimage: --> 
-<!-- pageexcerpt: -->
-<!-- pagekeywords: -->
-<!-- pageauthor: -->
-<!-- pagetype: -->
-```
-
-### Importance of Customization
-While defaults and fallbacks exist, it's essential to customize metadata for each page for optimal SEO performance. Communicating this requirement to end-users is crucial for maximizing the framework's effectiveness.
-
-### Framework Reliability
-Efforts have been made to make the framework as foolproof as possible to minimize potential issues. However, there may still be scenarios where challenges arise beyond the scope of immediate resolution.
-
-### Viewing Metadata
-To facilitate the viewing of metadata as interpreted by search engines, a built-in method is provided. Simply append `/?meta=yes` to the end of the URL to activate the meta-info panel. Additionally, once you have added that query to your url, JavaScript automatically appends `/?meta=yes` to all page links, allowing for efficient checking across multiple pages. Clicking the home link in the navigation bar disables this feature and restores links back to their original targets.
-
-By following these guidelines and leveraging the framework's built-in SEO capabilities, users can enhance their website's visibility and performance across various search engines.
+<p>SEO support is built directly into the framework. Every page automatically gets a full set of <code>&lt;meta&gt;</code> tags and OpenGraph properties in the <code>&lt;head&gt;</code>, drawn from that page's metadata block and your site-wide config defaults.</p>
+<hr/>
+<h2>The Metadata Block</h2>
+<p>Every page file should begin with this block of HTML comments:</p>
+<pre><code>&lt;!-- pagetitle: My Page Title --&gt;
+&lt;!-- pagelayout: page-html --&gt;
+&lt;!-- pagedate: 2024-06-15 --&gt;
+&lt;!-- pageimage: pages/images/my-image.webp --&gt;
+&lt;!-- pageexcerpt: A short description of this page, around 120 characters. --&gt;
+&lt;!-- pagekeywords: keyword one, keyword two, keyword three --&gt;
+&lt;!-- pageauthor: Jane Smith --&gt;
+&lt;!-- pagetype: article --&gt;
+</code></pre>
+<p>None of these fields are strictly required — the framework has fallbacks for all of them. But filling them in for every page gives search engines and social media platforms the best possible information.</p>
+<hr/>
+<h2>Field Reference</h2>
+<h3><code>pagetitle</code></h3>
+<p>The page's title. Appears as the <code>&lt;h1&gt;</code> on the page, in the browser tab, and in the OpenGraph <code>og:title</code> tag. If not set, the framework falls back to the page's filename (capitalised).</p>
+<h3><code>pagelayout</code></h3>
+<p>Controls which layout template is used to render the page. If not set, defaults to <code>page-html</code>. See the <a href="documentation/endusers/pagelayouts">Page Layouts</a> page for a full list of available layouts.</p>
+<h3><code>pagedate</code></h3>
+<p>The publication date of the page. Accepted formats:</p>
+<ul>
+    <li><code>YYYY-MM-DD HH:MM:SS</code> (e.g. <code>2024-06-15 00:00:00</code>)</li>
+    <li><code>m/d/Y</code> (e.g. <code>06/15/2024</code>)</li>
+    <li><code>l F jS, Y</code> (e.g. <code>Saturday June 15th, 2024</code>)</li>
+</ul>
+<p>The date is normalised to <code>YYYY-MM-DD HH:MM:SS</code> format before being written to the <code>og:article:published_time</code> tag. On <code>article</code> type pages, it is also displayed in a human-readable format beneath the page title. If not set, the file's last-modified timestamp is used.</p>
+<h3><code>pageimage</code></h3>
+<p>Path to the page's representative image, relative to the site root (e.g. <code>pages/images/my-photo.webp</code>). Used in the <code>og:image</code> tag, which controls the thumbnail shown when the page is shared on social media. If not set, falls back to <code>$WebsiteImage</code> from config.</p>
+<h3><code>pageexcerpt</code></h3>
+<p>A short description of the page, ideally under 160 characters. Used in <code>&lt;meta name="description"&gt;</code> and <code>og:description</code>. If not set, falls back to <code>$WebsiteDescription</code> from config.</p>
+<h3><code>pagekeywords</code></h3>
+<p>A comma-separated list of keywords for <code>&lt;meta name="keywords"&gt;</code>. If not set, falls back to <code>$WebsiteKeywords</code> from config.</p>
+<h3><code>pageauthor</code></h3>
+<p>The author's name, used in <code>&lt;meta name="author"&gt;</code>. On <code>article</code> type pages, it is also displayed beneath the page title. If not set, falls back to <code>$WebsiteAuthor</code> from config.</p>
+<h3><code>pagetype</code></h3>
+<p>The OpenGraph content type for the <code>og:type</code> tag. If not set, defaults to <code>website</code>. Accepted values: <code>website</code>, <code>article</code>, <code>blog</code>, <code>profile</code>, <code>video</code>, <code>music</code>, <code>book</code>, <code>product</code>.</p>
+<hr/>
+<h2>Fallback Chain</h2>
+<p>The framework never outputs blank meta tags. The fallback order for every field is:</p>
+<ol>
+    <li>The value set in the page's metadata block</li>
+    <li>The site-wide default set in <code>config/config.php</code></li>
+    <li>A built-in hardcoded fallback (e.g. <code>"website"</code> for <code>pagetype</code>, the filename for <code>pagetitle</code>)</li>
+</ol>
+<p>You can see exactly what values a page is resolving to at any time using the <a href="documentation/developers/metatool">Meta Debug Tool</a> (<code>?meta=yes</code>).</p>
+<hr/>
+<h2>What Gets Output</h2>
+<p>The skeleton theme's <code>header.php</code> outputs the following tags, populated from the metadata above:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Tag</th>
+            <th>Source</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>&lt;title&gt;</code></td>
+            <td><code>pagetitle</code> + <code>$WebsiteTitle</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;meta name="description"&gt;</code></td>
+            <td><code>pageexcerpt</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;meta name="author"&gt;</code></td>
+            <td><code>pageauthor</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;meta name="keywords"&gt;</code></td>
+            <td><code>pagekeywords</code></td>
+        </tr>
+        <tr>
+            <td><code>&lt;link rel="canonical"&gt;</code></td>
+            <td>Current URL</td>
+        </tr>
+        <tr>
+            <td><code>og:title</code></td>
+            <td><code>pagetitle</code></td>
+        </tr>
+        <tr>
+            <td><code>og:description</code></td>
+            <td><code>pageexcerpt</code></td>
+        </tr>
+        <tr>
+            <td><code>og:url</code></td>
+            <td>Current URL</td>
+        </tr>
+        <tr>
+            <td><code>og:image</code></td>
+            <td><code>pageimage</code></td>
+        </tr>
+        <tr>
+            <td><code>og:type</code></td>
+            <td><code>pagetype</code></td>
+        </tr>
+        <tr>
+            <td><code>og:site_name</code></td>
+            <td><code>$WebsiteTitle</code></td>
+        </tr>
+        <tr>
+            <td><code>og:locale</code></td>
+            <td><code>$WebsiteLanguageLocale</code></td>
+        </tr>
+        <tr>
+            <td><code>og:article:published_time</code></td>
+            <td><code>pagedate</code> (normalised)</td>
+        </tr>
+    </tbody>
+</table>

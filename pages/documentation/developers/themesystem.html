@@ -1,0 +1,204 @@
+<!-- pagetitle: The Theme System -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How the theme system works, what files make up a theme, and how to create your own. -->
+<!-- pagekeywords: theme, skeleton, template, header, footer, layout, customization -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The framework uses a simple file-based theme system. Each theme is a folder inside <code>themes/</code> containing a set of PHP files that control the site's HTML structure and page layouts. The active theme is set by the <code>$theme</code> variable in <code>config/config.php</code>.</p>
+<p>The repository ships with one theme: <code>themes/skeleton/</code>. This is intended as your starting point — clone it, rename the folder, point <code>$theme</code> at it, and customise from there.</p>
+<hr/>
+<h2>Theme File Structure</h2>
+<p>A complete theme folder contains the following files:</p>
+<pre><code>themes/your-theme/
+├── header.php              # &lt;head&gt;, navigation, hero banner — opened but not closed
+├── footer.php              # Closing tags, footer columns, below-content scripts
+├── navigation.php          # The rendered navigation bar HTML
+├── navigation-options.php  # StellarNav JavaScript initialisation
+├── navigation.css          # Navigation bar styles
+├── custom.css              # Your theme's main stylesheet
+├── page-md.php             # Layout: Markdown page with title
+├── page-md-notitle.php     # Layout: Markdown page without title
+├── page-html.php           # Layout: HTML page with title
+├── page-html-notitle.php   # Layout: HTML page without title
+├── postarchives.php        # Layout: Post archive/listing page
+├── postarchives-styled.php # Layout: Styled post archive variant
+└── postarchives-notitle.php # Layout: Post archive without title
+</code></pre>
+<hr/>
+<h2>How a Page is Assembled</h2>
+<p>When a request comes in, <code>index.php</code> determines the page name, extracts metadata from the page file, then hands off to the theme's <code>header.php</code>. The header file is responsible for pulling in everything else via PHP includes. The overall assembly order is:</p>
+<ol>
+    <li><code>themes/[theme]/header.php</code> — outputs <code><head></code>, loads CSS and plugins, renders the nav bar and hero, then <strong>includes the layout file</strong> based on <code>$pagelayout</code></li>
+    <li>The layout file (e.g. <code>page-md.php</code>) — reads the page content file from <code>pages/</code>, processes shortcodes, renders Markdown (if applicable), and outputs the content</li>
+    <li><code>themes/[theme]/footer.php</code> — outputs footer columns, flushes <code>$pluginCalledBelowContent</code>, includes <code>navigation-options.php</code>, and closes <code></body></html></code></li>
+</ol>
+<hr/>
+<h2>Available Variables in Theme Files</h2>
+<p>The following PHP variables are available inside all theme files:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Variable</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>$pagename</code></td>
+            <td>string</td>
+            <td>The URL slug of the current page (e.g. <code>documentation/introduction</code>)</td>
+        </tr>
+        <tr>
+            <td><code>$pagetitle</code></td>
+            <td>string</td>
+            <td>From page metadata. Falls back to <code>ucwords($pagename)</code> if not set</td>
+        </tr>
+        <tr>
+            <td><code>$pagelayout</code></td>
+            <td>string</td>
+            <td>The layout filename to use (without <code>.php</code>)</td>
+        </tr>
+        <tr>
+            <td><code>$pagedate</code></td>
+            <td>string</td>
+            <td>Publication date, normalised to <code>Y-m-d H:i:s</code>. Falls back to file modification time</td>
+        </tr>
+        <tr>
+            <td><code>$pageimage</code></td>
+            <td>string</td>
+            <td>Relative path to the page image. Falls back to <code>$WebsiteImage</code></td>
+        </tr>
+        <tr>
+            <td><code>$pageexcerpt</code></td>
+            <td>string</td>
+            <td>Short description. Falls back to <code>$WebsiteDescription</code></td>
+        </tr>
+        <tr>
+            <td><code>$pagekeywords</code></td>
+            <td>string</td>
+            <td>SEO keywords. Falls back to <code>$WebsiteKeywords</code></td>
+        </tr>
+        <tr>
+            <td><code>$pageauthor</code></td>
+            <td>string</td>
+            <td>Author name. Falls back to <code>$WebsiteAuthor</code></td>
+        </tr>
+        <tr>
+            <td><code>$pagetype</code></td>
+            <td>string</td>
+            <td>OpenGraph type (e.g. <code>article</code>, <code>website</code>). Falls back to <code>"website"</code></td>
+        </tr>
+        <tr>
+            <td><code>$WebsiteTitle</code></td>
+            <td>string</td>
+            <td>From config</td>
+        </tr>
+        <tr>
+            <td><code>$WebsiteURL</code></td>
+            <td>string</td>
+            <td>Full canonical URL (protocol + domain)</td>
+        </tr>
+        <tr>
+            <td><code>$currentURL</code></td>
+            <td>string</td>
+            <td>Full URL of the current request</td>
+        </tr>
+        <tr>
+            <td><code>$theme</code></td>
+            <td>string</td>
+            <td>Active theme name</td>
+        </tr>
+        <tr>
+            <td><code>$showhomepagetitle</code></td>
+            <td>bool</td>
+            <td>Whether to show title on home page</td>
+        </tr>
+        <tr>
+            <td><code>$pluginCalledBelowContent</code></td>
+            <td>string</td>
+            <td>Accumulated plugin scripts, flushed in footer</td>
+        </tr>
+    </tbody>
+</table>
+<hr/>
+<h2>Page Layouts</h2>
+<p>The <code>$pagelayout</code> metadata value in each page file controls which layout PHP file is used to render the content. If <code>pagelayout</code> is not set, the framework defaults to <code>page-md</code>.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Layout value</th>
+            <th>File</th>
+            <th>Behaviour</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>page-md</code></td>
+            <td><code>page-md.php</code></td>
+            <td>Renders page content as Markdown, shows title</td>
+        </tr>
+        <tr>
+            <td><code>page-md-notitle</code></td>
+            <td><code>page-md-notitle.php</code></td>
+            <td>Renders page content as Markdown, hides title</td>
+        </tr>
+        <tr>
+            <td><code>page-html</code></td>
+            <td><code>page-html.php</code></td>
+            <td>Renders page content as raw HTML, shows title</td>
+        </tr>
+        <tr>
+            <td><code>page-html-notitle</code></td>
+            <td><code>page-html-notitle.php</code></td>
+            <td>Renders page content as raw HTML, hides title</td>
+        </tr>
+        <tr>
+            <td><code>postarchives</code></td>
+            <td><code>postarchives.php</code></td>
+            <td>Generates a paginated list of all posts</td>
+        </tr>
+        <tr>
+            <td><code>postarchives-styled</code></td>
+            <td><code>postarchives-styled.php</code></td>
+            <td>Styled variant of the post archive</td>
+        </tr>
+        <tr>
+            <td><code>postarchives-notitle</code></td>
+            <td><code>postarchives-notitle.php</code></td>
+            <td>Post archive without a page title</td>
+        </tr>
+    </tbody>
+</table>
+<p>You can add your own layout files to the theme folder and reference them by name in page metadata.</p>
+<hr/>
+<h2>The Navigation File</h2>
+<p>Navigation is defined in <code>pages/navigation.html</code> as a standard Markdown unordered list. The <code>navigation.php</code> theme file reads this file, passes it through the Markdown parser, and outputs it inside a <code>&lt;div class="stellarnav"&gt;</code> wrapper which StellarNav then enhances.</p>
+<p>Nested lists become dropdown menus. Use <code>#0</code> as the <code>href</code> for parent items that should not be links themselves:</p>
+<pre><code class="language-markdown">* Home
+* [About](#0)
+  * [Team](/about/team)
+  * [History](/about/history)
+* [Contact](/contact)
+</code></pre>
+<p>Nesting can go three levels deep. See the <a href="/documentation/developers/stellarnav">StellarNav</a> page for configuration options.</p>
+<hr/>
+<h2>Footer Columns</h2>
+<p>Footer content is driven by Markdown files in <code>pages/footer/</code>. Each file corresponds to one column. The number of columns is set by <code>$numberFooterColumns</code> in <code>config.php</code>. Files must be named <code>footer1.html</code>, <code>footer2.html</code>, etc.</p>
+<p>Each footer file can optionally include a section title using an HTML comment at the top:</p>
+<pre><code class="language-html">&lt;!-- sectiontitle: About Us --&gt;
+
+Some footer content here.
+</code></pre>
+<hr/>
+<h2>Creating a New Theme</h2>
+<ol>
+    <li>Copy <code>themes/skeleton/</code> to a new folder, e.g. <code>themes/mytheme/</code></li>
+    <li>Update <code>$theme = "mytheme";</code> in <code>config/config.php</code></li>
+    <li>Edit <code>custom.css</code> for your styles and modify the PHP layout files as needed</li>
+    <li>The <code>required/</code> files and core CSS (<code>css/base.css</code>, <code>css/flexgridsystem.css</code>, <code>css/normalize.css</code>) are shared across all themes and should not need to be duplicated</li>
+</ol>
+<p>Keep the include calls in <code>header.php</code> intact — they load the plugin system, metadata, and navigation. The layout include (<code>include $pagelayout . ".php"</code>) and the <code>footer.php</code> include at the bottom of <code>header.php</code> are also required for the framework to function.</p>

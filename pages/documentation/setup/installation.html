@@ -1,0 +1,122 @@
+<!-- pagetitle: Installation & Getting Started -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 2024-01-01 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: Everything you need to get Simple Website Framework running from a fresh clone to a live site. -->
+<!-- pagekeywords: installation, setup, getting started, requirements, deployment -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>This guide covers everything you need to get Simple Website Framework up and running, from server requirements to your first page.</p>
+<hr/>
+<h2>Server Requirements</h2>
+<p>Before you begin, make sure your server meets these requirements:</p>
+<ul>
+    <li><strong>PHP 7.4 or higher</strong> (PHP 8.x recommended)</li>
+    <li><strong>Apache</strong> with <code>mod_rewrite</code> enabled</li>
+    <li><strong>AllowOverride All</strong> set for your document root (required for <code>.htaccess</code> to function)</li>
+</ul>
+<p>The framework does <strong>not</strong> require a database, Composer, or any package manager. Everything it needs is bundled in the repository.</p>
+<hr/>
+<h2>Installation</h2>
+<p><strong>1. Clone or download the repository</strong></p>
+<p>Place the files in your web server's document root, or in a subdirectory if you prefer.</p>
+<pre><code>git clone https://github.com/ScarylePoo/simple-website-framework.git
+</code></pre>
+<p><strong>2. Copy and configure <code>config.php</code></strong></p>
+<p>A <code>config-example.php</code> is provided in the <code>config/</code> folder. Copy it to <code>config.php</code> and open it for editing:</p>
+<pre><code>cp config/config-example.php config/config.php
+</code></pre>
+<p>At minimum, set the following values before the site will work correctly:</p>
+<ul>
+    <li><code>$WebsiteURL</code> — your domain name, without protocol (e.g. <code>example.com</code>)</li>
+    <li><code>$SSL</code> — set to <code>true</code> if your site uses HTTPS</li>
+    <li><code>$ForceWWW</code> — set to <code>true</code> to force the <code>www.</code> prefix, <code>false</code> to strip it</li>
+</ul>
+<p>See the <a href="/documentation/setup/configuration">Configuration Reference</a> for a full breakdown of every available option.</p>
+<p><strong>3. Verify Apache is configured correctly</strong></p>
+<p>The framework relies on <code>.htaccess</code> to route all clean URLs through <code>index.php</code>. If you are getting 404 errors on every page, <code>mod_rewrite</code> is likely not enabled or <code>AllowOverride</code> is not set to <code>All</code>.</p>
+<p>On Ubuntu/Debian you can enable <code>mod_rewrite</code> with:</p>
+<pre><code>sudo a2enmod rewrite
+sudo systemctl restart apache2
+</code></pre>
+<p><strong>4. Set file permissions</strong></p>
+<p>The web server needs read access to all files. If you intend to use HTML caching, the web server also needs write access to the root directory so it can create cache files:</p>
+<pre><code>chmod 755 /path/to/your/site
+</code></pre>
+<p><strong>5. Visit your site</strong></p>
+<p>If everything is configured correctly, navigating to your domain should display the home page. If you see a blank page or errors, check your PHP error log.</p>
+<hr/>
+<h2>Development vs Production</h2>
+<p>The framework ships with caching <strong>disabled</strong> by default, which is correct for development. Before deploying to production, enable caching in <code>config.php</code>:</p>
+<pre><code class="language-php">$enableHTMLCacheServe = true;
+</code></pre>
+<p>See the <a href="/documentation/developers/caching">Caching</a> page for full details.</p>
+<hr/>
+<h2>Directory Structure</h2>
+<p>Here is a quick overview of what each folder does:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Path</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>config/</code></td>
+            <td>Site configuration</td>
+        </tr>
+        <tr>
+            <td><code>css/</code></td>
+            <td>Global CSS (normalize, base, flex grid)</td>
+        </tr>
+        <tr>
+            <td><code>images/</code></td>
+            <td>Site-wide images (favicon, hero, defaults)</td>
+        </tr>
+        <tr>
+            <td><code>includes/</code></td>
+            <td>Bundled JS libraries (jQuery)</td>
+        </tr>
+        <tr>
+            <td><code>pages/</code></td>
+            <td>All page content as <code>.html</code> files</td>
+        </tr>
+        <tr>
+            <td><code>pages/posts/</code></td>
+            <td>Blog post content</td>
+        </tr>
+        <tr>
+            <td><code>pages/footer/</code></td>
+            <td>Footer column content</td>
+        </tr>
+        <tr>
+            <td><code>plugins/</code></td>
+            <td>Plugin files and <code>plugins.php</code> loader</td>
+        </tr>
+        <tr>
+            <td><code>required/</code></td>
+            <td>Core framework PHP files (do not edit)</td>
+        </tr>
+        <tr>
+            <td><code>themes/</code></td>
+            <td>Theme folders</td>
+        </tr>
+        <tr>
+            <td><code>themes/skeleton/</code></td>
+            <td>The default starter theme</td>
+        </tr>
+        <tr>
+            <td><code>extras/</code></td>
+            <td>Optional tools not part of the core framework</td>
+        </tr>
+    </tbody>
+</table>
+<hr/>
+<h2>Next Steps</h2>
+<ul>
+    <li><a href="/documentation/setup/configuration">Configuration Reference</a> — every config variable explained</li>
+    <li><a href="/documentation/endusers/creatingpages">Creating Pages</a> — how to add content</li>
+    <li><a href="/documentation/developers/themesystem">Theme System</a> — how to customise the look and feel</li>
+</ul>
