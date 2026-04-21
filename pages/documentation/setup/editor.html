@@ -1,0 +1,185 @@
+<!-- pagetitle: Page Editor Plugin -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 4/20/2026 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How to install, configure and use the optional per-page editor plugin. -->
+<!-- pagekeywords: editor, plugin, summernote, password, token, security -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The page editor is an optional plugin that adds a password-protected editor to the bottom of any page when <code>?editor=yourtoken</code> is appended to the URL. It lets you edit page content and metadata, and create new pages, directly in the browser — with no database and no permanently exposed admin panel.</p>
+
+<p>When <code>$editorEnabled</code> is set to <code>false</code>, zero editor code runs anywhere on the site. It is completely inert.</p>
+
+<hr/>
+
+<h2>Installation</h2>
+
+<p>The editor plugin ships as three PHP files and one <code>.htaccess</code> file, all inside <code>plugins/editor/</code>. They are included in the framework repository. No additional setup is needed beyond configuration.</p>
+
+<hr/>
+
+<h2>Configuration</h2>
+
+<p>All editor settings live in <code>config/config.php</code> inside the <code>if ($loadplugins == true)</code> block. There are three values to set:</p>
+
+<pre>
+$editorEnabled      = true;
+$editorToken        = 'your-random-token';
+$editorPasswordHash = '$2y$10$...';
+$editorSessionTimeout = 1800;
+</pre>
+
+<hr/>
+
+<h2>Generating a Password Hash</h2>
+
+<p>The editor uses a bcrypt password hash — you never store the plaintext password anywhere. To generate a hash:</p>
+
+<p><strong>Step 1.</strong> Create a new file anywhere in your site root — for example <code>hash.php</code> — containing exactly this:</p>
+
+<pre>
+&lt;?php echo password_hash('yourpassword', PASSWORD_BCRYPT); ?&gt;
+</pre>
+
+<p><strong>Step 2.</strong> Visit that file in your browser: <code>yoursite.com/hash.php</code></p>
+
+<p>You will see a long string starting with <code>$2y$10$</code> — something like:</p>
+
+<pre>
+$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
+</pre>
+
+<p><strong>Step 3.</strong> Copy that entire string and paste it as the value of <code>$editorPasswordHash</code> in <code>config.php</code>.</p>
+
+<p><strong>Step 4.</strong> Delete <code>hash.php</code> immediately. Do not leave it on your server.</p>
+
+<p>If you ever want to change your password, repeat this process with the new password and replace the hash in <code>config.php</code>.</p>
+
+<hr/>
+
+<h2>Setting the URL Token</h2>
+
+<p>The <code>$editorToken</code> is a secret string that must be present in the URL for the editor to appear at all. Anyone who doesn't know the token will see nothing — not even a login form. This keeps the editor's existence hidden from casual probing.</p>
+
+<p>Choose something long and random. The easiest way is to generate one at the command line:</p>
+
+<pre>
+php -r "echo bin2hex(random_bytes(16));"
+</pre>
+
+<p>This produces a 32-character hex string like <code>a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e</code>. Paste that as your token:</p>
+
+<pre>
+$editorToken = 'a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e';
+</pre>
+
+<p>Alternatively, make up any string you like — just keep it long (16+ characters) and don't reuse a password or other credential.</p>
+
+<hr/>
+
+<h2>Accessing the Editor</h2>
+
+<p>Once configured, append <code>?editor=yourtoken</code> to any page URL:</p>
+
+<pre>
+https://yoursite.com/about?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
+https://yoursite.com/posts/my-post?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
+https://yoursite.com/documentation/introduction?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
+</pre>
+
+<p>If the token matches, a password prompt appears at the bottom of the page. Enter your password to unlock the editor. The session lasts for the duration set in <code>$editorSessionTimeout</code> (default 30 minutes) and expires automatically on inactivity.</p>
+
+<p>If the token does not match, the page renders normally with no indication that an editor exists.</p>
+
+<hr/>
+
+<h2>Using the Editor</h2>
+
+<p>Once authenticated, the editor appears below the page content with two tabs:</p>
+
+<h3>Edit this page</h3>
+
+<p>Shows the current page's metadata fields pre-populated — title, layout, type, date, author, image, excerpt, and keywords — along with a Summernote rich text editor loaded with the page's current content. Make your changes and click <strong>Save page</strong>. The file is written to disk immediately and the cache for that page is busted automatically.</p>
+
+<h3>New page</h3>
+
+<p>Provides the same metadata fields as a blank form, plus a content editor. The <strong>Page name / path</strong> field determines where the file will be created inside <code>pages/</code>:</p>
+
+<ul>
+    <li><code>about</code> creates <code>pages/about.html</code>, accessible at <code>/about</code></li>
+    <li><code>posts/my-post</code> creates <code>pages/posts/my-post.html</code>, accessible at <code>/posts/my-post</code></li>
+    <li><code>documentation/setup/myguide</code> creates the file in a subfolder, accessible at that path</li>
+</ul>
+
+<p>Subfolders are created automatically if they don't exist. You cannot overwrite an existing page — if the file already exists you will get an error.</p>
+
+<p>After a page is created the editor opens it automatically so you can continue editing straight away.</p>
+
+<hr/>
+
+<h2>Session Timeout</h2>
+
+<p><code>$editorSessionTimeout</code> controls how long an authenticated session lasts without activity, in seconds. The default is <code>1800</code> (30 minutes). Adjust it to suit your workflow:</p>
+
+<pre>
+$editorSessionTimeout = 3600;  // 1 hour
+$editorSessionTimeout = 900;   // 15 minutes
+</pre>
+
+<p>When a session expires you will be prompted to enter your password again.</p>
+
+<hr/>
+
+<h2>Security Model</h2>
+
+<p>The editor uses several layers of protection:</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Layer</th>
+            <th>What it does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>URL token</td>
+            <td>Hides the editor entirely from anyone who doesn't know the token. No login form is shown without it.</td>
+        </tr>
+        <tr>
+            <td>Password + bcrypt</td>
+            <td>Verifies identity on login. The plaintext password is never stored anywhere.</td>
+        </tr>
+        <tr>
+            <td>IP-based lockout</td>
+            <td>After 5 failed login attempts from the same IP address, the login form is disabled for 15 minutes. Persists across cookie resets.</td>
+        </tr>
+        <tr>
+            <td>Session regeneration</td>
+            <td>The session ID is rotated immediately on successful login, preventing session fixation attacks.</td>
+        </tr>
+        <tr>
+            <td>CSRF token</td>
+            <td>Every save, create, and logout action must include a cryptographically random token tied to the current session. Protects against cross-site request forgery.</td>
+        </tr>
+        <tr>
+            <td>Session timeout</td>
+            <td>Sessions expire automatically after the configured period of inactivity.</td>
+        </tr>
+        <tr>
+            <td>Secure cookie flags</td>
+            <td>The session cookie is flagged HttpOnly (no JavaScript access) and SameSite Strict. On HTTPS it is also flagged Secure.</td>
+        </tr>
+        <tr>
+            <td>Path validation</td>
+            <td>All file write operations validate that the target path resolves inside <code>pages/</code>. Path traversal attempts are rejected.</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr/>
+
+<h2>Disabling the Editor</h2>
+
+<p>Set <code>$editorEnabled = false</code> in <code>config.php</code>. When false, the editor plugin is never included, no editor code runs on any page, and the <code>?editor</code> query parameter is ignored entirely.</p>

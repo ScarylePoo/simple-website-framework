@@ -7,8 +7,10 @@
 <!-- pageauthor: Scary le Poo -->
 <!-- pagetype:website -->
 
-<p>Creating a new page for your website is a breeze. Simply craft a new <code>.md</code> file. When it's time to publish, slot it into the <code>pages</code> folder, or nest it within a subfolder if you prefer. Access your new page via <code><domain name>/<folder>/<file name></code>. Typically, pages reside in the root <code>Pages</code> folder, but the choice is yours.</p>
-<p>Crafting a post follows the same straightforward process as creating a page. The only distinction is that posts are housed in the <code>pages/posts</code> subfolder.</p>
+<p>Creating a new page is simple. Create a new <code>.html</code> file, add a metadata block at the top, write your content below it, and drop it into the <code>pages/</code> folder. The framework picks it up automatically — no registration, no database entry, no config change needed. Access it at <code>yoursite.com/filename</code>.</p>
+<p>You can also organise pages into subfolders. A file at <code>pages/docs/setup.html</code> is accessible at <code>yoursite.com/docs/setup</code>.</p>
+<p>Posts work the same way — the only difference is they live in <code>pages/posts/</code> instead, which means they appear in the post archives page and the RSS feed.</p>
+<p>If you prefer to create and edit pages in the browser rather than directly in the file system, the optional editor plugin lets you do exactly that. See the <a href="documentation/setup/editor">Editor</a> documentation for setup instructions.</p>
 <p>Each page requires specific metadata:</p>
 <pre><code class="language-markdown">&lt;!-- pagetitle: --&gt;
 &lt;!-- pagelayout: --&gt;
@@ -27,5 +29,5 @@
     <li><strong>pageexcerpt:</strong> Provides a concise 120-character summary, serving as a description or tagline.</li>
     <li><strong>pagekeywords:</strong> Comprise essential terms for search engine optimization.</li>
     <li><strong>pageauthor:</strong> Identifies the author for posts, appearing beneath the title.</li>
-    <li><strong>pagetype:</strong> Categorizes the page for search engines. Here are the possible catigorizations: <code>website, article, blog, profile, video, music, book, product</code>.</li>
+    <li><strong>pagetype:</strong> Categorizes the page for search engines. Here are the possible categorizations: <code>website, article, blog, profile, video, music, book, product</code>.</li>
 </ol>

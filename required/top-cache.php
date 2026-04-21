@@ -2,7 +2,7 @@
 // Function to remove unwanted query strings from URL
 function removeUnwantedQueryString($url) {
     // Define the list of query string parameters to preserve
-    $preserveParams = array('meta', 'page');
+    $preserveParams = array('meta', 'page', 'editor');
 
     // Parse the URL
     $urlParts = parse_url($url);

@@ -111,11 +111,16 @@ var href = link.getAttribute(\'href\');
     <link type="text/css" href="plugins/font-awesome-4.7.0/css/font-awesome.css" rel="stylesheet" />
 <?php } ?>
 
-<?php /* yBox 4.7.0 */ ?>
+<?php /* yBox (Lightbox) */ ?>
 <?php if ($yBox == true) {
 	$yBoxScriptContent = '
 	<link rel="stylesheet" href="plugins/yBox-main/dist/css/ybox.min.css" />
 	<script type="text/javascript" src="plugins/yBox-main/dist/js/ybox.min.js?lang=he"></script>
 	';
 	$pluginCalledBelowContent = $pluginCalledBelowContent . $yBoxScriptContent;
+} ?>
+
+<?php /* Page Editor */ ?>
+<?php if (isset($editorEnabled) && $editorEnabled == true) {
+    include 'plugins/editor/editor.php';
 } ?>

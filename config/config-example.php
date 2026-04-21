@@ -46,5 +46,20 @@
 		
 		/* yBox (Lightbox) */
         $yBox = true;
-    }	
+		
+        /* ── Page Editor ────────────────────────────────────────────────────────
+           Enables the per-page editor. Access any page with ?editor appended to
+           the URL. You will be prompted for a password each session.
+
+           To generate a password hash, run this in a PHP file once then delete it:
+               echo password_hash('yourpassword', PASSWORD_BCRYPT);
+           Paste the result below.
+
+           Set $editorEnabled = false to completely disable the editor.
+           When false, no editor code runs anywhere on the site.
+        ── */
+        $editorEnabled = false;
+        $editorPasswordHash = ''; /* Paste your bcrypt hash here */
+        $editorSessionTimeout = 1800; /* Session lifetime in seconds. Default: 1800 (30 minutes) */
+    }
 ?>
