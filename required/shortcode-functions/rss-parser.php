@@ -15,7 +15,7 @@ function shortcode_rss_feed($attributes, $content) {
 
     // Check if the feed was successfully loaded
     if ($rss === false) {
-        return '<p>Error loading RSS feed.</p>';
+        return '<p>Error loading RSS feed.</p>' . $rss_url;
     }
 
     // Start building the HTML output

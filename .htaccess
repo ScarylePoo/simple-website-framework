@@ -1,31 +1,31 @@
 <IfModule mod_rewrite.c>
-	RewriteEngine On
-	RewriteBase /
+    RewriteEngine On
+    RewriteBase /
 
-	# Redirect HTTP to HTTPS
-	# RewriteCond %{HTTPS} off
-	# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L]
+    # Redirect HTTP to HTTPS
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L]
 
-	# Redirect non-www to www
-	# RewriteCond %{HTTP_HOST} !^www\. [NC]
-	# RewriteRule ^ http://www.%{HTTP_HOST}%{REQUEST_URI} [L]
-	
-	# These rules make the framework function. Without these 3 lines, it will not function properly.
-	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteCond %{REQUEST_FILENAME} !-d
-	RewriteRule ^((?:[A-Za-z0-9\-]+/)*[A-Za-z0-9\-]+)?$ index.php [L,QSA]
+    # Redirect non-www to www
+    # RewriteCond %{HTTP_HOST} !^www\. [NC]
+    # RewriteRule ^ http://www.%{HTTP_HOST}%{REQUEST_URI} [L]
+
+    # These rules make the framework function. Without these 3 lines, it will not function properly.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^((?:[A-Za-z0-9\-]+/)*[A-Za-z0-9\-]+)?$ index.php [L,QSA]
+
 </IfModule>
 
 <IfModule mod_autoindex.c>
-	# Don't show file indexes
-	Options -Indexes
+    # Don't show file indexes
+    Options -Indexes
 </IfModule>
 
 <IfModule mod_headers.c>
-	# Set security headers
-	Header set X-Content-Type-Options "nosniff"
-	Header set X-Frame-Options "SAMEORIGIN"
-	Header always set Content-Security-Policy "upgrade-insecure-requests;"
-	Header always set Content-Security-Policy "frame-ancestors 'self'"
-	Header always set Referrer-Policy "strict-origin"
+    # Set security headers
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header always set Content-Security-Policy "upgrade-insecure-requests; frame-ancestors 'self'"
+    Header always set Referrer-Policy "strict-origin"
 </IfModule>
