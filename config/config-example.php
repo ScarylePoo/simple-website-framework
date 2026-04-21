@@ -48,17 +48,31 @@
         $yBox = true;
 		
         /* ── Page Editor ────────────────────────────────────────────────────────
-           Enables the per-page editor. Access any page with ?editor appended to
-           the URL. You will be prompted for a password each session.
+           Enables the per-page editor. Access any page with ?editor or
+           ?editor=yourtoken appended to the URL.
 
-           To generate a password hash, run this in a PHP file once then delete it:
-               echo password_hash('yourpassword', PASSWORD_BCRYPT);
-           Paste the result below.
+           SETUP:
+           1. Generate a password hash — create a temp PHP file containing:
+                  <?php echo password_hash('yourpassword', PASSWORD_BCRYPT); ?>
+              Visit it once, copy the output, delete the file.
+              Paste the result into $editorPasswordHash below.
+
+           2. Set $editorToken to a long random string. This must be included
+              in the URL to even reach the login form:
+                  yoursite.com/about?editor=yourtoken
+              Generate one with: php -r "echo bin2hex(random_bytes(16));"
+              Leave empty ('') to disable the URL token check (not recommended).
+
+           3. Set $editorEnabled = true.
+
+           4. On production (HTTPS), session cookies are automatically flagged
+              Secure and HttpOnly. On local HTTP development this is fine as-is.
 
            Set $editorEnabled = false to completely disable the editor.
-           When false, no editor code runs anywhere on the site.
+           When false, zero editor code runs anywhere on the site.
         ── */
-        $editorEnabled = false;
+        $editorEnabled      = false;
+        $editorToken        = ''; /* Recommended: a long random string, e.g. bin2hex(random_bytes(16)) */
         $editorPasswordHash = ''; /* Paste your bcrypt hash here */
         $editorSessionTimeout = 1800; /* Session lifetime in seconds. Default: 1800 (30 minutes) */
     }
