@@ -91,7 +91,7 @@ $WebsiteLanguageLocale = "en_US";
 <hr/>
 <h3><code>$showhomepagetitle</code></h3>
 <p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
-<p>Controls whether the page title <code><h1></code> is shown on the home page. On all other pages the title is always shown. Set to <code>false</code> if your home page design handles the heading itself.</p>
+<p>Controls whether the page title <code>&lt;h1&gt;</code> is shown on the home page. On all other pages the title is always shown. Set to <code>false</code> if your home page design handles the heading itself.</p>
 <pre><code class="language-php">$showhomepagetitle = true;
 </code></pre>
 <hr/>
@@ -125,11 +125,3 @@ $WebsiteLanguageLocale = "en_US";
 <h3><code>$yBox</code></h3>
 <p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>true</code></p>
 <p>Loads the yBox lightbox plugin. Required if you want clickable image lightboxes on your pages.</p>
-<hr/>
-<h2>Footer</h2>
-<h3><code>$numberFooterColumns</code></h3>
-<p><strong>Type:</strong> <code>int</code> | <strong>Default:</strong> <code>3</code></p>
-<p>The number of columns to display in the footer. The framework looks for files named <code>footer1.html</code>, <code>footer2.html</code>, etc. inside <code>pages/footer/</code>, up to this number. If a file is missing, the column displays an error message.</p>
-<pre><code class="language-php">$numberFooterColumns = 3;
-</code></pre>
-<p>See <a href="/documentation/developers/footercolumns">Footer Columns</a> for details on formatting footer files.</p>
