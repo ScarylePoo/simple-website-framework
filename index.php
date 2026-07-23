@@ -24,7 +24,7 @@
 	}
 
 	// Enable Gzip compression for HTML output
-	if (!headers_sent() && ob_get_length() === 0) {
+	if (!headers_sent() && ob_get_level() === 0) {
 		if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') && !in_array("ob_gzhandler", ob_list_handlers())) {
 			ob_start("ob_gzhandler");
 		} else {

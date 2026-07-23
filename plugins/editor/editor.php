@@ -42,9 +42,27 @@ if (!editor_check_url_token()) {
 
 // Handle login POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['swf_editor_password'])) {
+    // Drain any buffered output BEFORE authenticating. editor.php runs partway
+    // through header.php, so by this point <head> content may already be
+    // sitting in the output buffer. editor_authenticate() needs a clean slate
+    // to send its own Set-Cookie header (session_regenerate_id), and the
+    // header('Location: ...') redirect below needs the same.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
     editor_authenticate($_POST['swf_editor_password']);
     $redirect = strtok($_SERVER['REQUEST_URI'], '?') . '?' . http_build_query(['editor' => $_GET['editor'] ?? '']);
-    header('Location: ' . $redirect);
+
+    if (!headers_sent()) {
+        header('Location: ' . $redirect);
+        exit;
+    }
+
+    // Fallback if headers were genuinely already sent (e.g. output_buffering
+    // is Off at the server level) — JS/meta-refresh instead of a blank page.
+    echo '<script>window.location.href = ' . json_encode($redirect) . ';</script>';
+    echo '<noscript><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($redirect) . '"></noscript>';
     exit;
 }
 
