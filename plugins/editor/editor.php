@@ -266,7 +266,7 @@ ob_start();
 
 </div>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css" rel="stylesheet">
+<link href="plugins/editor/summernote/summernote-lite.css" rel="stylesheet">
 
 <?php
 $editorScript = ob_get_clean();
@@ -278,7 +278,7 @@ if ($isAuthed):
     $pagenameJson       = json_encode($pagename);
     $csrfJson           = json_encode($csrfToken);
 ?>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js"></script>
+<script src="plugins/editor/summernote/summernote-lite.min.js"></script>
 <script>
 jQuery(document).ready(function($) {
     var cfg = {
