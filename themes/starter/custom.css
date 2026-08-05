@@ -1,0 +1,628 @@
+/*********************************************
+* SWF STARTER THEME
+**********************************************
+* A starting point. No web fonts, no imports,
+* no build step, and nothing you have to remove
+* before you can begin.
+*
+* This file assumes the current css/base.css,
+* which already handles the reset, the type
+* scale, links, lists, quotes, tables, code,
+* focus rings and reduced motion. None of that
+* is repeated here.
+*
+* So the theme only does three things:
+*   1. Sets the tokens base.css reads (section 1)
+*   2. Adds layout classes base.css deliberately
+*      leaves to themes (section 3)
+*   3. Styles the framework's own containers,
+*      nav, header and footer (sections 4-8)
+**********************************************
+* INDEX
+**********************************************
+1. Tokens
+2. Buttons & forms
+3. Layout primitives
+4. Framework containers
+5. Navigation
+6. Header / hero
+7. Footer
+8. Post archives
+9. Utilities
+**********************************************/
+
+
+/*********************************************
+* 1. Tokens
+**********************************************
+* The first block overrides variables that
+* base.css already defines. The second adds
+* variables that only this theme uses.
+*
+* For most projects this section is the only
+* part of the file you need to touch.
+**********************************************/
+:root {
+	/* --- Overriding base.css ---------------
+	   Point --font-heading at --font-serif for
+	   an instantly different feel. All three
+	   stacks are defined in base.css and are
+	   system fonts, so nothing is downloaded. */
+	--font-heading: var(--font-sans);
+
+	--color-text:       #1c1c1a;
+	--color-heading:    #111110;
+	--color-muted:      #5d5c58;
+	--color-bg:         #ffffff;
+	--color-surface:    #f4f3f0;
+	--color-border:     #dddcd7;
+	--color-link:       #1c5ea8;
+	--color-link-hover: #123f73;
+
+	/* --- Added by this theme --------------- */
+	--color-border-firm: #b9b7b0;
+	--color-accent:      var(--color-link);
+	--color-accent-bg:   #eaf1f9;
+
+	--color-bg-inverse:   #1c1c1a;
+	--color-text-inverse: #f4f3f0;
+
+	/* Spacing steps derived from base.css's
+	   --space, so changing that one value
+	   rescales the whole theme proportionally. */
+	--step-xs: calc(var(--space) * 0.5);
+	--step-sm: var(--space);
+	--step-md: calc(var(--space) * 1.5);
+	--step-lg: calc(var(--space) * 2);
+	--step-xl: calc(var(--space) * 3);
+	--step-2xl: calc(var(--space) * 4.5);
+	--step-3xl: calc(var(--space) * 7);
+
+	--width-page: 74rem;   /* outer container */
+	--width-wide: 90rem;   /* escape hatch    */
+	--gutter:     var(--step-md);
+
+	--border-hair: 1px solid var(--color-border);
+	--transition:  150ms ease;
+}
+
+/* --- Optional: dark mode -------------------
+   Reassigns the same variables and nothing
+   else. Delete this block if you don't want
+   dark mode; no rule below depends on it. */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-text:       #e6e4dd;
+		--color-heading:    #f5f3ee;
+		--color-muted:      #a3a099;
+		--color-bg:         #161614;
+		--color-surface:    #201f1c;
+		--color-border:     #35332e;
+		--color-link:       #7fb3ea;
+		--color-link-hover: #a9cdf4;
+
+		--color-border-firm:  #55524b;
+		--color-accent-bg:    #1d2836;
+		--color-bg-inverse:   #e6e4dd;
+		--color-text-inverse: #161614;
+	}
+}
+
+/* A small-caps label. base.css leaves h6 as a
+   plain sixth heading level, which is right —
+   use this class where you want a label. */
+.eyebrow {
+	display: block;
+	margin-bottom: var(--step-xs);
+	font-size: 0.85em;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--color-muted);
+}
+
+
+/*********************************************
+* 2. Buttons & forms
+**********************************************
+* base.css gives form controls a border, padding
+* and the page font. It doesn't style buttons,
+* because a button is a design decision.
+**********************************************/
+.btn,
+button,
+input[type="submit"],
+input[type="button"] {
+	display: inline-block;
+	width: auto;
+	padding: var(--step-xs) var(--step-md);
+	font: inherit;
+	font-weight: 600;
+	line-height: var(--line-height-tight);
+	text-align: center;
+	text-decoration: none;
+	color: var(--color-text-inverse);
+	background: var(--color-bg-inverse);
+	border: 1px solid var(--color-bg-inverse);
+	border-radius: var(--radius);
+	cursor: pointer;
+	transition: background var(--transition), color var(--transition);
+}
+
+.btn:hover,
+button:hover,
+input[type="submit"]:hover {
+	color: var(--color-text-inverse);
+	background: var(--color-link-hover);
+	border-color: var(--color-link-hover);
+	text-decoration: none;
+}
+
+.btn-outline {
+	color: var(--color-text);
+	background: transparent;
+	border-color: var(--color-border-firm);
+}
+
+.btn-outline:hover {
+	color: var(--color-text-inverse);
+	background: var(--color-bg-inverse);
+	border-color: var(--color-bg-inverse);
+}
+
+.btn-small {
+	padding: calc(var(--space) * 0.25) var(--step-xs);
+	font-size: 0.9em;
+}
+
+.field {
+	margin-bottom: var(--step-sm);
+}
+
+.field input,
+.field select,
+.field textarea {
+	width: 100%;
+}
+
+.field label {
+	font-weight: 600;
+}
+
+.hint {
+	display: block;
+	margin-top: calc(var(--space) * 0.25);
+	font-size: 0.9em;
+	color: var(--color-muted);
+}
+
+
+/*********************************************
+* 3. Layout primitives
+**********************************************
+* Five classes that cover most page structure.
+*
+*   .band     full-width horizontal band
+*   .wrap     centred max-width container
+*   .stack    even vertical gap between children
+*   .cluster  horizontal group that wraps
+*   .card     bordered box
+*
+* Columns come from css/flexgridsystem.css —
+* row / column / flex-basis-*. This theme
+* deliberately doesn't duplicate that.
+*
+* Reading width comes from .measure in base.css.
+*
+* Note: the band is NOT called .section. The
+* page-*.php templates already emit
+* <div class="section group">, so styling
+* .section would pad the inside of every page.
+**********************************************/
+.band {
+	padding-top: var(--step-2xl);
+	padding-bottom: var(--step-2xl);
+}
+
+.band-tight { padding-top: var(--step-lg); padding-bottom: var(--step-lg); }
+.band-loose { padding-top: var(--step-3xl); padding-bottom: var(--step-3xl); }
+
+/* Background variants — apply alongside .band */
+.band-sunk { background: var(--color-surface); }
+
+.band-inverse {
+	background: var(--color-bg-inverse);
+	color: var(--color-text-inverse);
+}
+
+.band-inverse h1, .band-inverse h2, .band-inverse h3,
+.band-inverse h4, .band-inverse h5, .band-inverse h6,
+.band-inverse a {
+	color: var(--color-text-inverse);
+}
+
+.band-inverse .lead,
+.band-inverse .eyebrow {
+	color: var(--color-text-inverse);
+	opacity: 0.75;
+}
+
+/* An outline button on a dark band borrows the
+   band's foreground colour. */
+.band-inverse .btn-outline {
+	color: var(--color-text-inverse);
+	border-color: var(--color-text-inverse);
+}
+
+.band-inverse .btn-outline:hover {
+	color: var(--color-bg-inverse);
+	background: var(--color-text-inverse);
+}
+
+.wrap {
+	width: 100%;
+	max-width: var(--width-page);
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: var(--gutter);
+	padding-right: var(--gutter);
+}
+
+.wrap-wide   { max-width: var(--width-wide); }
+.wrap-narrow { max-width: 48rem; }
+
+/* base.css ships .measure for reading width;
+   this centres it. */
+.measure-center {
+	max-width: var(--measure);
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* Owl selector: gap between siblings only, so
+   the first and last child stay flush. Children's
+   own margins are zeroed first, otherwise a <p>
+   adds its bottom margin on top of the gap and
+   you get double spacing. */
+.stack > * {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.stack > * + * {
+	margin-top: var(--step-sm);
+}
+
+/* Headings still get a little more air above. */
+.stack > * + :is(h2, h3, h4) {
+	margin-top: var(--step-lg);
+}
+
+.stack-lg > * + * { margin-top: var(--step-lg); }
+.stack-xl > * + * { margin-top: var(--step-xl); }
+
+.cluster {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--step-xs) var(--step-sm);
+}
+
+.cluster-center  { justify-content: center; }
+.cluster-between { justify-content: space-between; }
+
+.card {
+	/* .column centres its text; cards shouldn't. */
+	text-align: left;
+	padding: var(--step-md);
+	background: var(--color-bg);
+	border: var(--border-hair);
+	border-radius: var(--radius);
+}
+
+.note {
+	padding: var(--step-sm) var(--step-md);
+	background: var(--color-accent-bg);
+	border-left: 3px solid var(--color-accent);
+}
+
+.note > :last-child { margin-bottom: 0; }
+
+
+/*********************************************
+* 4. Framework containers
+**********************************************
+* .contentcontainer, .pagetitle and .content are
+* written by the page-*.php templates. Keep the
+* names so every layout keeps working.
+**********************************************/
+.contentcontainer {
+	width: 100%;
+	max-width: var(--width-page);
+	margin: 0 auto;
+	padding: var(--step-2xl) var(--gutter);
+}
+
+.pagetitle {
+	max-width: var(--measure);
+	margin-bottom: var(--step-lg);
+}
+
+.pagetitle h1 { margin: 0; }
+
+.pagedate,
+.pageauthor {
+	margin: calc(var(--space) * 0.25) 0 0;
+	font-size: 0.9em;
+	color: var(--color-muted);
+}
+
+.content {
+	max-width: var(--measure);
+}
+
+/* Opt out of the reading measure for a page or
+   a single block that needs the full width. */
+.content-wide  { max-width: none; }
+.content .full { max-width: none; }
+
+/* Used by page-blank.php — sections manage their
+   own width, so the wrapper adds nothing. */
+.blanklayout {
+	max-width: none;
+	padding: 0;
+}
+
+/* Image size helpers. base.css already stops
+   images overflowing; these cap them further. */
+img.framed { border: var(--border-hair); border-radius: var(--radius); }
+img.round  { border-radius: 50%; }
+img.tiny   { max-width: 150px; }
+img.small  { max-width: 300px; }
+img.medium { max-width: 600px; }
+img.large  { max-width: 1000px; }
+img.full   { width: 100%; }
+
+
+/*********************************************
+* 5. Navigation
+**********************************************
+* Colours only. The structural rules live in
+* navigation.css, which is unchanged from
+* skeleton — override its variables here rather
+* than editing that file.
+**********************************************/
+:root {
+	--bottomlevel-bg-color:       var(--color-bg);
+	--bottomlevel-bg-color-hover: var(--color-surface);
+	--firstlevel-bg-color:        var(--color-bg);
+	--firstlevel-bg-color-hover:  var(--color-surface);
+	--secondlevel-bg-color:       var(--color-bg);
+	--secondlevel-bg-color-hover: var(--color-surface);
+}
+
+.stickynav {
+	background: var(--color-bg);
+	border-bottom: var(--border-hair);
+	text-shadow: none;
+}
+
+.stellarnav {
+	font-size: 0.95rem;
+}
+
+.stellarnav a,
+.stellarnav a:hover {
+	color: var(--color-text);
+	text-decoration: none;
+}
+
+.stellarnav > ul > li > a {
+	padding: var(--step-xs) var(--step-md);
+	font-weight: 600;
+}
+
+/* navigation.css draws a white sliding underline
+   on hover; recolour it for a light bar. */
+.stellarnav a::before {
+	background-color: var(--color-text);
+}
+
+.stellarnav ul ul {
+	border: var(--border-hair);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.stellarnav ul li:hover,
+.stellarnav ul li li:hover,
+.stellarnav ul li li li:hover {
+	background-color: var(--color-surface);
+}
+
+/* Skip link — visible only when focused. */
+.skiplink {
+	position: absolute;
+	top: 0;
+	left: -9999px;
+	z-index: 9999;
+	padding: var(--step-xs) var(--step-sm);
+	color: var(--color-text-inverse);
+	background: var(--color-bg-inverse);
+	text-decoration: none;
+}
+
+.skiplink:focus {
+	left: 0;
+	color: var(--color-text-inverse);
+}
+
+
+/*********************************************
+* 6. Header / hero
+**********************************************
+* No background image, no fixed height, no
+* down-arrow. It's a text block — put whatever
+* you want in header.php.
+**********************************************/
+.header {
+	border-bottom: var(--border-hair);
+}
+
+.hero {
+	padding-top: var(--step-2xl);
+	padding-bottom: var(--step-2xl);
+}
+
+.herosmall {
+	padding-top: var(--step-lg);
+	padding-bottom: var(--step-lg);
+}
+
+.herocontent {
+	width: 100%;
+	max-width: var(--width-page);
+	margin: 0 auto;
+	padding-left: var(--gutter);
+	padding-right: var(--gutter);
+}
+
+span.herotext {
+	display: block;
+	font-family: var(--font-heading);
+	font-size: var(--h1);
+	font-weight: 700;
+	line-height: var(--line-height-heading);
+	color: var(--color-heading);
+	text-wrap: balance;
+}
+
+.herosmall span.herotext {
+	font-size: var(--h2);
+}
+
+.herosubtext {
+	max-width: var(--measure);
+	margin: var(--step-sm) 0 0;
+	font-size: 1.1em;
+	color: var(--color-muted);
+}
+
+
+/*********************************************
+* 7. Footer
+**********************************************/
+.footercontainer {
+	margin-top: var(--step-2xl);
+	padding-top: var(--step-xl);
+	padding-bottom: var(--step-lg);
+	background: var(--color-surface);
+	border-top: var(--border-hair);
+	font-size: 0.95rem;
+}
+
+.footercontent {
+	width: 100%;
+	max-width: var(--width-page);
+	margin: 0 auto;
+	padding-left: var(--gutter);
+	padding-right: var(--gutter);
+	color: var(--color-text);
+	text-align: left;
+}
+
+.footercontent a { color: var(--color-text); }
+
+.footercontent span.sectiontitle {
+	display: block;
+	margin-bottom: var(--step-xs);
+	font-family: var(--font-heading);
+	font-weight: 700;
+	color: var(--color-heading);
+	text-align: left;
+}
+
+.footerbottom {
+	max-width: var(--width-page);
+	margin: var(--step-lg) auto 0;
+	padding: var(--step-sm) var(--gutter) 0;
+	border-top: var(--border-hair);
+	font-size: 0.9em;
+	color: var(--color-muted);
+}
+
+
+/*********************************************
+* 8. Post archives
+**********************************************/
+.postarchive-item {
+	margin-bottom: var(--step-lg);
+	padding-bottom: var(--step-lg);
+	border-bottom: var(--border-hair);
+}
+
+.postarchive-item:last-child {
+	margin-bottom: 0;
+	border-bottom: 0;
+}
+
+.postarchive-item h2,
+.postarchive-item h3 { margin-top: 0; }
+
+
+/*********************************************
+* 9. Utilities
+**********************************************
+* base.css already ships .lead, .hug, .flush,
+* .measure, .table-full, .table-scroll and
+* .visually-hidden. These are the extras.
+**********************************************/
+.textalign-left   { text-align: left; }
+.textalign-center { text-align: center; }
+.textalign-right  { text-align: right; }
+
+.center { display: block; margin-left: auto; margin-right: auto; }
+
+.muted  { color: var(--color-muted); }
+.nowrap { white-space: nowrap; }
+
+.padding-5px  { padding: 5px; }
+.padding-10px { padding: 10px; }
+.padding-20px { padding: 20px; }
+.padding-50px { padding: 50px; }
+
+/* Meta debug overlay (?meta=yes) */
+#debug-overlay-container {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	z-index: 9999;
+	padding: var(--step-xs);
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	line-height: 1.5;
+	background: var(--color-surface);
+	border-top: var(--border-hair);
+}
+
+.debug-content { max-width: 800px; margin: 0 auto; }
+
+
+/*********************************************
+* 10. Print
+**********************************************/
+@media print {
+	.stickynav, .footercontainer, .skiplink,
+	#debug-overlay-container { display: none; }
+
+	body { background: #fff; color: #000; font-size: 11pt; }
+	.contentcontainer, .content, .measure { max-width: none; }
+
+	a[href^="http"]::after {
+		content: " (" attr(href) ")";
+		font-size: 0.85em;
+		word-break: break-all;
+	}
+
+	pre, blockquote, table { break-inside: avoid; }
+}

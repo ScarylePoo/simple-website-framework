@@ -1,227 +1,609 @@
 /*********************************************
+* SIMPLE WEBSITE FRAMEWORK - BASE CSS
+**********************************************
+* Loads after normalize.css, before the flex
+* grid, before the theme.
+*
+* This file is the typographic baseline every
+* theme inherits. It should be opinionated about
+* READABILITY and silent about STYLE. Anything
+* decorative belongs in a theme's custom.css.
+*
+* Everything adjustable is a custom property in
+* section 1. Themes override those rather than
+* rewriting rules, which means a theme can
+* rebrand the baseline without fighting
+* specificity.
+**********************************************
 * INDEX
 **********************************************
-1. Setup
-2. Links
-3. Copy & Lists
-4. Headings
-5. Tables
-6. Code blocks
-7. Leading paragraph text
-8. Hug the block above you
-9. Blockquote
-10. Preformatted Text
+1.  Variables
+2.  Document setup
+3.  Media defaults
+4.  Focus & motion
+5.  Links
+6.  Headings
+7.  Copy & lists
+8.  Blockquote
+9.  Tables
+10. Code & preformatted text
+11. Forms
+12. Rules & misc
+13. Baseline helper classes
 **********************************************/
 
+
 /*********************************************
-* 1. Setup
+* 1. Variables
+**********************************************
+* These names are the framework's public API for
+* themes. Override them in your theme's
+* custom.css; don't edit them here.
+**********************************************/
+:root {
+	/* Type. System stacks by default so a site
+	   renders correctly before any font loads.
+	   Point --font-heading at --font-serif for an
+	   instantly different feel. */
+	--font-sans:  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+	--font-mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+	--font-body:    var(--font-sans);
+	--font-heading: var(--font-sans);
+
+	/* Root size stays at 100% so 1rem equals the
+	   reader's own browser setting and every rem
+	   calculation downstream is predictable.
+	   Change the BODY size, not the root size. */
+	--font-size-base: 1.0625rem;   /* 17px at default settings */
+
+	--line-height:         1.6;
+	--line-height-heading: 1.2;
+	--line-height-tight:   1.35;
+
+	/* Heading scale. clamp() responds to viewport
+	   WIDTH between a fixed floor and ceiling. */
+	--h1: clamp(2rem,    1.55rem + 2.2vw,  3rem);
+	--h2: clamp(1.6rem,  1.33rem + 1.35vw, 2.25rem);
+	--h3: clamp(1.35rem, 1.22rem + 0.65vw, 1.7rem);
+	--h4: 1.2rem;
+	--h5: 1.05rem;
+	--h6: 0.9rem;
+
+	/* Vertical rhythm. Every margin below is a
+	   multiple of this, so changing it rescales
+	   the whole document evenly. */
+	--space: 1rem;
+
+	/* Colour */
+	--color-text:       #1c1c1a;
+	--color-muted:      #5d5c58;
+	--color-heading:    var(--color-text);
+	--color-bg:         #ffffff;
+	--color-surface:    #f4f3f0;
+	--color-border:     #dddcd7;
+	--color-link:       #0f6ca8;
+	--color-link-hover: #0a4a75;
+	--color-focus:      var(--color-link);
+
+	/* Layout */
+	--measure: 70ch;   /* comfortable line length */
+	--radius:  4px;
+}
+
+
+/*********************************************
+* 2. Document setup
+**********************************************
+* WAS: html { font-size: 137.5% }
+*
+* That made 1rem ≈ 22px, so every rem value
+* written afterwards silently meant something
+* other than what it looked like — and it
+* overrode the reader's own browser font-size
+* preference. The comfortable reading size now
+* comes from --font-size-base on the body, where
+* it belongs.
+*
+* To restore the old scale on an existing site,
+* set this in your theme's custom.css:
+*     :root { --font-size-base: 1.375rem; }
 **********************************************/
 html {
-	/* Change default typefaces here */
-	font-family: sans-serif;
-	font-size: 137.5%;
-	-webkit-font-smoothing: antialiased;
+	font-size: 100%;
+	-webkit-text-size-adjust: 100%;
 }
 
+/* Border-box everywhere. Without this, adding
+   padding to a sized element makes it overflow,
+   which is the single most common layout bug in
+   hand-written CSS. */
+*, *::before, *::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background-color: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: var(--font-size-base);
+	line-height: var(--line-height);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+
 /*********************************************
-* 2. Links
+* 3. Media defaults
+**********************************************
+* Images that can overflow their container are
+* the second most common layout bug. Themes may
+* still decorate images; this only stops them
+* breaking the page.
+**********************************************/
+img, svg, video, canvas, audio, iframe, embed, object {
+	display: block;
+	max-width: 100%;
+}
+
+img, video {
+	height: auto;
+}
+
+
+/*********************************************
+* 4. Focus & motion
+**********************************************
+* normalize.css v3 shipped `a:hover { outline: 0 }`,
+* which removed the keyboard focus ring. That is
+* fixed by moving to v8; this section adds a
+* visible ring back deliberately.
+*
+* :focus-visible only shows the ring for keyboard
+* users, so mouse users don't see outlines on
+* click.
+**********************************************/
+:focus-visible {
+	outline: 3px solid var(--color-focus);
+	outline-offset: 2px;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+/* Anchor targets shouldn't land underneath a
+   sticky nav. */
+[id] {
+	scroll-margin-top: calc(var(--space) * 2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html { scroll-behavior: auto; }
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+
+/*********************************************
+* 5. Links
 **********************************************/
 a {
-	color: #1EAEDB;
-}
-a:hover {
-	color: #0FA0CE;
+	color: var(--color-link);
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+	text-decoration-thickness: 1px;
 }
 
+a:hover {
+	color: var(--color-link-hover);
+	text-decoration-thickness: 2px;
+}
+
+
 /*********************************************
-* 3. Copy & Lists
+* 6. Headings
+**********************************************
+* WAS: sizes in vmin, plus line-height: 1.5rem
+*      on every level, plus a 480px media query
+*      that bumped everything up again.
+*
+* Two problems with vmin. It resolves against the
+* SMALLER viewport axis, so headings shrank when
+* the browser window got short, not just narrow —
+* resize a window vertically and the type moves.
+* And a fixed 1.5rem line-height on a heading
+* several times that size makes wrapped headings
+* overlap.
+*
+* clamp() gives the same fluid behaviour, keyed to
+* width only, with a floor and a ceiling. Unitless
+* line-heights scale with each heading's own size,
+* so the 480px breakpoint is no longer needed.
+**********************************************/
+h1, h2, h3, h4, h5, h6 {
+	font-family: var(--font-heading);
+	color: var(--color-heading);
+	line-height: var(--line-height-heading);
+	margin-top: calc(var(--space) * 2);
+	margin-bottom: var(--space);
+	text-wrap: balance;
+}
+
+h1 { font-size: var(--h1); }
+h2 { font-size: var(--h2); }
+h3 { font-size: var(--h3); line-height: var(--line-height-tight); }
+h4 { font-size: var(--h4); line-height: var(--line-height-tight); }
+h5 { font-size: var(--h5); line-height: var(--line-height-tight); }
+h6 { font-size: var(--h6); line-height: var(--line-height-tight); }
+
+/* A heading at the top of a container shouldn't
+   push the container open. */
+h1:first-child, h2:first-child, h3:first-child,
+h4:first-child, h5:first-child, h6:first-child {
+	margin-top: 0;
+}
+
+
+/*********************************************
+* 7. Copy & lists
+**********************************************
+* WAS: p { margin-top: 1vmin; margin-bottom: 0 }
+*
+* Viewport-based paragraph spacing means the gap
+* between paragraphs changes as the window is
+* resized, and the missing bottom margin meant a
+* paragraph followed by anything other than
+* another paragraph had no gap at all.
+*
+* WAS: li { line-height: 1.5rem }
+* Fixed leading doesn't scale if a list item
+* contains larger text.
 **********************************************/
 p {
-	line-height: 1.5rem;
-	margin-top: 1vmin;
-	margin-bottom: 0;
-}
-ul,
-ol {
-	margin-top: 1.5rem;
-	margin-bottom: 1.5rem;
-}
-ul li,
-ol li {
-	line-height: 1.5rem;
-}
-ul ul,
-ol ul,
-ul ol,
-ol ol {
 	margin-top: 0;
+	margin-bottom: var(--space);
+}
+
+ul, ol {
+	margin-top: 0;
+	margin-bottom: var(--space);
+	padding-left: 1.4em;
+}
+
+li {
+	margin-bottom: calc(var(--space) * 0.25);
+}
+
+ul ul, ul ol, ol ul, ol ol {
+	margin-top: calc(var(--space) * 0.25);
 	margin-bottom: 0;
 }
+
+dl {
+	margin-top: 0;
+	margin-bottom: var(--space);
+}
+
+dt { font-weight: 700; }
+
+dd {
+	margin-left: 0;
+	margin-bottom: calc(var(--space) * 0.5);
+	padding-left: var(--space);
+}
+
+
 /*********************************************
-* 4. Blockquote
+* 8. Blockquote
+**********************************************
+* WAS: a grey box fixed at 60% width, 50px auto
+*      margins, an 8px left border, italics, and
+*      a 4em curly-quote glyph in ::before.
+*
+* That is a designed component, not a baseline.
+* At 60% width it ignored its container, and
+* every theme had to unpick it before styling
+* quotes its own way.
+*
+* The decorated version is preserved below as an
+* opt-in .pullquote class, so existing pages can
+* keep the old look by adding one class.
 **********************************************/
 blockquote {
-	line-height: 1.5rem;
-	margin-top: 1.5rem;
-	margin-bottom: 1.5rem;
+	margin: calc(var(--space) * 1.5) 0;
+	padding-left: var(--space);
+	border-left: 3px solid var(--color-border);
+	color: var(--color-muted);
 }
 
-blockquote{
-    font-size: 1.4em;
-    width:60%;
-    margin:50px auto;
-    font-style:italic;
-    color: #555555;
-    padding:1.2em 30px 1.2em 75px;
-    border-left:8px solid #999 ;
-    line-height:1.6;
-    position: relative;
-    background:#EDEDED;
-    border-top: 1px solid #ccc;
-    border-right: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
+blockquote > :last-child {
+	margin-bottom: 0;
 }
 
-blockquote::before{
-    font-family:Arial;
-    content: "\201C";
-    color:#999;
-    font-size:4em;
-    position: absolute;
-    left: 10px;
-    top:-10px;
+blockquote cite {
+	display: block;
+	margin-top: calc(var(--space) * 0.5);
+	font-size: 0.9em;
+	font-style: normal;
+	font-weight: 700;
+	color: var(--color-text);
 }
 
-blockquote::after{
-    content: '';
+/* Opt-in: the previous default appearance. */
+.pullquote {
+	position: relative;
+	width: 60%;
+	margin: calc(var(--space) * 2.5) auto;
+	padding: 1.2em 30px 1.2em 75px;
+	font-size: 1.25em;
+	font-style: italic;
+	color: #555;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-left: 8px solid #999;
 }
 
-blockquote span{
-    display:block;
-    color:#333333;
-    font-style: normal;
-    font-weight: bold;
-    margin-top:1em;
+.pullquote::before {
+	content: "\201C";
+	position: absolute;
+	left: 10px;
+	top: -10px;
+	font-family: var(--font-serif);
+	font-size: 4em;
+	color: #999;
 }
 
-/*********************************************
-* 5. Headings
-**********************************************/
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	/* Change heading typefaces here */
-	font-family: sans-serif;
-    margin-bottom: 0;
-	line-height: 1.5rem;
-	margin-top: 1.5rem;
-}
-h1 {
-	font-size: 6vmin;
-	line-height: 6.5vmin;
-}
-h2 {
-	font-size: 5.5vmin;
-	line-height: 6vmin;
-}
-h3 {
-	font-size: 5vmin;
-	line-height: 5.5vmin;
-}
-h4 {
-	font-size: 4.5vmin;
-	line-height: 5vmin;
-}
-h5 {
-	font-size: 4vmin;
-	line-height: 4.5vmin;
-}
-h6 {
-	font-size: 3.5vmin;
-	line-height: 4vmin;
+@media only screen and (max-width: 700px) {
+	.pullquote {
+		width: auto;
+		padding-left: 30px;
+	}
+	.pullquote::before { content: none; }
 }
 
-@media only screen and (max-width : 480px) {
-/* Mobile */
-    h1 {
-        font-size: 8vmin;
-        line-height: 8.5vmin;
-    }
-    h2 {
-        font-size: 7.5vmin;
-        line-height: 8vmin;
-    }
-    h3 {
-        font-size: 7vmin;
-        line-height: 7.5vmin;
-    }
-    h4 {
-        font-size: 6.5vmin;
-        line-height: 7vmin;
-    }
-    h5 {
-        font-size: 6vmin;
-        line-height: 6.5vmin;
-    }
-    h6 {
-        font-size: 5.5vmin;
-        line-height: 6vmin;
-    }
-}
 
 /*********************************************
-* 6. Tables
+* 9. Tables
+**********************************************
+* WAS: table td, th { line-height: 33px }
+*
+* A magic pixel value that didn't scale with the
+* text and forced tall rows on dense tables.
+*
+* Note: normalize v3 used to set border-collapse
+* and th padding. v8 dropped its table section
+* entirely, so those are set explicitly here.
 **********************************************/
 table {
-	margin-top: 1.5rem;
-	border-spacing: 0px;
+	margin-top: 0;
+	margin-bottom: var(--space);
 	border-collapse: collapse;
-}
-table td,
-table th {
-	padding: 10px;
-	line-height: 33px;
+	border-spacing: 0;
 }
 
+/* Width is a layout decision, so tables stay
+   auto-width here. Add .table-full where you
+   want one to fill its container. */
+.table-full {
+	width: 100%;
+}
+
+th, td {
+	padding: calc(var(--space) * 0.5) calc(var(--space) * 0.75);
+	line-height: var(--line-height-tight);
+	text-align: left;
+	vertical-align: top;
+	border-bottom: 1px solid var(--color-border);
+}
+
+th {
+	font-weight: 700;
+	color: var(--color-heading);
+	border-bottom-width: 2px;
+}
+
+caption {
+	padding-bottom: calc(var(--space) * 0.5);
+	color: var(--color-muted);
+	text-align: left;
+}
+
+
 /*********************************************
-* 7. Code blocks
+* 10. Code & preformatted text
+**********************************************
+* WAS: p code { text-shadow: #FC0 1px 0 10px }
+*      A yellow glow behind inline code inside
+*      paragraphs. Decorative, and it made code
+*      harder to read on light backgrounds.
+*
+* WAS: code { vertical-align: bottom }
+*      Dropped inline code below its own
+*      baseline, so it sat lower than the words
+*      either side of it.
+*
+* WAS: pre { font-size: 50% }
+*      Halved code to roughly 11px. Combined with
+*      word-break: keep-all and white-space:
+*      pre-wrap, long lines wrapped mid-token and
+*      lost their indentation.
 **********************************************/
+code, kbd, samp, pre {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+}
+
 code {
-	vertical-align: bottom;
+	padding: 0.1em 0.35em;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+	word-break: break-word;
 }
 
-p code {
-    text-shadow: #FC0 1px 0 10px;
+pre {
+	margin-top: 0;
+	margin-bottom: var(--space);
+	padding: var(--space);
+	font-size: 0.875rem;
+	line-height: 1.55;
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+	/* Scroll rather than wrap, so indentation and
+	   line numbers survive. */
+	overflow-x: auto;
+	white-space: pre;
+	word-break: normal;
 }
+
+pre code {
+	padding: 0;
+	font-size: inherit;
+	background: none;
+	border: 0;
+}
+
+kbd {
+	padding: 0.1em 0.4em;
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-bottom-width: 2px;
+	border-radius: var(--radius);
+}
+
 
 /*********************************************
-* 8. Leading paragraph text
+* 11. Forms
+**********************************************
+* normalize v8 already makes form controls
+* inherit the page font. This adds the minimum
+* needed for a usable, unstyled form.
 **********************************************/
+label {
+	display: block;
+	margin-bottom: calc(var(--space) * 0.25);
+}
+
+input, select, textarea {
+	max-width: 100%;
+	padding: calc(var(--space) * 0.4) calc(var(--space) * 0.6);
+	color: var(--color-text);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+	padding: 0;
+	border: 0;
+}
+
+textarea {
+	display: block;
+	resize: vertical;
+}
+
+button,
+input[type="submit"],
+input[type="button"] {
+	cursor: pointer;
+}
+
+
+/*********************************************
+* 12. Rules & misc
+**********************************************/
+hr {
+	height: 0;
+	margin: calc(var(--space) * 2) 0;
+	border: 0;
+	border-top: 1px solid var(--color-border);
+}
+
+figure {
+	margin: calc(var(--space) * 1.5) 0;
+}
+
+figcaption {
+	margin-top: calc(var(--space) * 0.5);
+	font-size: 0.9em;
+	color: var(--color-muted);
+}
+
+abbr[title] {
+	text-decoration: underline dotted;
+	cursor: help;
+}
+
+mark {
+	padding: 0.1em 0.25em;
+	background: #fdf3c4;
+	color: inherit;
+}
+
+
+/*********************************************
+* 13. Baseline helper classes
+**********************************************
+* Kept small on purpose. Layout helpers belong in
+* a theme, not here.
+**********************************************/
+
+/* Larger intro paragraph. */
 .lead {
-	font-size: 1.414rem;
+	font-size: 1.15em;
+	line-height: var(--line-height);
+	color: var(--color-muted);
 }
 
-/*********************************************
-* 9. Hug the block above you
-**********************************************/
+/* Remove the top margin, to sit tight under the
+   block above. */
 .hug {
 	margin-top: 0;
 }
 
-/*********************************************
-* 10. Preformatted Text
-**********************************************/
-pre {
-	background-color: #f5f2f0;
-	padding: 10px 20px;
-	border: 1px solid #ccc;
-	white-space: pre-wrap;
-    word-break: keep-all;
-	font-size: 50%;
+/* Remove the bottom margin. */
+.flush {
+	margin-bottom: 0;
 }
+
+/* Cap text at a comfortable reading width. */
+.measure {
+	max-width: var(--measure);
+}
+
+/* Let a wide table scroll instead of overflowing
+   the page. Wrap the table in this. */
+.table-scroll {
+	overflow-x: auto;
+	margin-bottom: var(--space);
+}
+
+.table-scroll table {
+	margin-bottom: 0;
+}
+
+/* Visible to screen readers only. */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
 
 /*********************************************
 * END OF BASE CSS
