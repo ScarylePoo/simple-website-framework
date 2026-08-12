@@ -387,34 +387,49 @@ img.full   { width: 100%; }
 /*********************************************
 * 5. Navigation
 **********************************************
-* Colours only. The structural rules live in
-* navigation.css, which is unchanged from
-* skeleton — override its variables here rather
-* than editing that file.
+* Tokens only. Every colour in navigation.css
+* is now a variable, so this section reassigns
+* them and then does nothing but spacing.
+*
+* Dropdown arrows and the sliding hover underline
+* are drawn with currentColor, so --nav-color
+* carries them too. Leave `theme: ''` in
+* navigation-options.php; 'light' and 'dark' set
+* the same variables to fixed values and would
+* stop the bar following the palette.
 **********************************************/
 :root {
+	/* Bar and dropdown backgrounds */
 	--bottomlevel-bg-color:       var(--color-bg);
 	--bottomlevel-bg-color-hover: var(--color-surface);
 	--firstlevel-bg-color:        var(--color-bg);
 	--firstlevel-bg-color-hover:  var(--color-surface);
 	--secondlevel-bg-color:       var(--color-bg);
 	--secondlevel-bg-color-hover: var(--color-surface);
+
+	/* Foreground */
+	--nav-color:               var(--color-text);
+	--nav-icon-color:          var(--color-text);
+	--nav-divider-color:       var(--color-border);
+	--nav-divider-color-faint: var(--color-border);
+
+	/* Mobile panel */
+	--nav-mobile-bg:        var(--color-bg);
+	--nav-mobile-subnav-bg: var(--color-surface);
+
+	/* Effects. The defaults assume a dark bar. */
+	--nav-text-shadow:     none;
+	--nav-dropdown-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+	--nav-hover-shadow:    none;
 }
 
 .stickynav {
 	background: var(--color-bg);
 	border-bottom: var(--border-hair);
-	text-shadow: none;
 }
 
 .stellarnav {
 	font-size: 0.95rem;
-}
-
-.stellarnav a,
-.stellarnav a:hover {
-	color: var(--color-text);
-	text-decoration: none;
 }
 
 .stellarnav > ul > li > a {
@@ -422,21 +437,8 @@ img.full   { width: 100%; }
 	font-weight: 600;
 }
 
-/* navigation.css draws a white sliding underline
-   on hover; recolour it for a light bar. */
-.stellarnav a::before {
-	background-color: var(--color-text);
-}
-
 .stellarnav ul ul {
 	border: var(--border-hair);
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-}
-
-.stellarnav ul li:hover,
-.stellarnav ul li li:hover,
-.stellarnav ul li li li:hover {
-	background-color: var(--color-surface);
 }
 
 /* Skip link — visible only when focused. */

@@ -77,7 +77,7 @@
            string and the editor behaves exactly as it always has, with no code
            field on the login form and nothing extra to configure.
 
-           To switch it on, log into the editor as normal and visit:
+           To switch it on, **log into the editor as normal** and **then** visit:
                   yoursite.com/about?editor=yourtoken&totp=setup
            That screen generates a secret, shows a QR code to scan, lets you
            confirm your app agrees before you commit, and prints the line to
