@@ -1,0 +1,12 @@
+# Deny web access to everything in this directory.
+# config.php holds $editorTotpSecret, which cannot be hashed — the server needs
+# the real value to recompute codes. If PHP ever fails to execute (module
+# disabled during an upgrade, a stray .php.bak, a misconfigured vhost) this file
+# is what stops the secret being served as plain text.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

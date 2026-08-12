@@ -1,5 +1,12 @@
-# Block direct web access to the lockouts file
-<Files "lockouts.json">
-    Order allow,deny
-    Deny from all
-</Files>
+# Block direct web access to the editor's flat-file state.
+# lockouts.json holds failed-attempt counts; totp-used.json holds the last
+# accepted TOTP counter and must not be readable or writable from outside.
+<FilesMatch "\.json$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

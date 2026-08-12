@@ -10,6 +10,11 @@ if (!defined('SWF_EDITOR')) {
     die('Direct access not permitted.');
 }
 
+// Optional TOTP second factor. Loading this file costs nothing when TOTP is
+// switched off — every function inside it is gated on $editorTotpSecret being
+// set in config.php.
+require_once __DIR__ . '/editor-totp.php';
+
 // Suppress PHP error output — errors are logged server-side, never shown to visitors
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -28,6 +33,7 @@ define('SWF_EDITOR_SESSION_KEY',  'swf_editor_authed');
 define('SWF_EDITOR_CSRF_KEY',     'swf_editor_csrf');
 define('SWF_EDITOR_ATTEMPTS_KEY', 'swf_editor_attempts');
 define('SWF_EDITOR_LOCKOUT_KEY',  'swf_editor_lockout');
+define('SWF_EDITOR_TOTP_PENDING', 'swf_editor_totp_pending');
 define('SWF_MAX_ATTEMPTS',        5);
 define('SWF_LOCKOUT_SECONDS',     900);  // 15 minutes
 
@@ -139,14 +145,30 @@ function editor_is_authenticated() {
     return true;
 }
 
-function editor_authenticate($password) {
-    global $editorPasswordHash;
+function editor_authenticate($password, $totpCode = '') {
+    global $editorPasswordHash, $editorTotpSecret;
 
     if (editor_is_locked_out()) {
         return false;
     }
 
-    if (password_verify($password, $editorPasswordHash)) {
+    $passwordOk = password_verify($password, $editorPasswordHash);
+
+    /*
+        The second factor is only consulted when $editorTotpSecret is set.
+        With it unset, $totpOk stays true and this behaves exactly as the
+        password-only editor always did.
+
+        The code is only marked as consumed when the password was also correct.
+        That stops a wrong-password attempt from burning a legitimate code out
+        of its window before the real user gets to type it.
+    */
+    $totpOk = true;
+    if (editor_totp_enabled()) {
+        $totpOk = editor_totp_verify($editorTotpSecret, $totpCode, $passwordOk);
+    }
+
+    if ($passwordOk && $totpOk) {
         // Regenerate session ID on login to prevent session fixation
         session_regenerate_id(true);
         $_SESSION[SWF_EDITOR_SESSION_KEY] = time();
@@ -156,6 +178,8 @@ function editor_authenticate($password) {
         return true;
     }
 
+    // A failed code counts against the same lockout budget as a failed
+    // password, so TOTP guessing is rate limited without any extra machinery.
     editor_record_failed_attempt();
     return false;
 }
@@ -163,6 +187,8 @@ function editor_authenticate($password) {
 function editor_logout() {
     unset($_SESSION[SWF_EDITOR_SESSION_KEY]);
     unset($_SESSION[SWF_EDITOR_CSRF_KEY]);
+    // Discard any half-finished TOTP enrolment
+    unset($_SESSION[SWF_EDITOR_TOTP_PENDING]);
 }
 
 /*

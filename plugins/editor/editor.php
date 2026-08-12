@@ -40,6 +40,70 @@ if (!editor_check_url_token()) {
     return;
 }
 
+/*
+    The two checks below sit behind the URL token deliberately. Both print
+    diagnostics that would confirm the editor exists on this site, so they must
+    not be reachable by anyone who cannot already get past the token.
+*/
+
+// A TOTP secret that isn't valid Base32 would silently reject every code with
+// no visible cause, so catch it here rather than letting it look like a typo.
+if (editor_totp_enabled() && !editor_totp_secret_is_valid($editorTotpSecret)) {
+    $pluginCalledBelowContent .= '
+    <div style="margin-top:60px;border-top:2px solid #c00;padding:20px;background:#fdecea;font-family:system-ui,sans-serif;color:#8b0000;">
+        <strong>Two-factor secret is not valid Base32.</strong>
+        <code>$editorTotpSecret</code> must contain only the characters A&ndash;Z and 2&ndash;7 &mdash; a plain passphrase will not work,
+        because authenticator apps decode what you type as Base32 before hashing it.
+        Visit <code>?editor=yourtoken&amp;totp=setup</code> to generate a valid one, or set the value back to an empty string to switch two-factor off.
+    </div>';
+    return;
+}
+
+/*
+    The editor keeps two pieces of state as flat JSON in its own directory:
+    lockouts.json (failed login attempts, which drives the 15 minute IP lockout)
+    and totp-used.json (the last accepted TOTP counter, which blocks replay of a
+    code inside its 30 second window).
+
+    Both are written with file_put_contents, and editor-auth.php sets
+    error_reporting(0), so a failed write produces nothing visible. The editor
+    would carry on working while quietly running with no brute force limit and
+    no replay protection — the kind of degradation that goes unnoticed for
+    years. Refuse to run instead, and say exactly what to fix.
+
+    Note that is_writable() reports what the PHP process can do. Under Apache
+    that is www-data and the answer is meaningful; if you run PHP as root
+    locally it will always say yes, so test permissions the way production runs.
+*/
+$editorStateFiles = array('lockouts.json', 'totp-used.json');
+$editorUnwritable = array();
+
+if (!is_writable(__DIR__)) {
+    // Cannot create missing state files at all
+    $editorUnwritable[] = 'plugins/editor/';
+} else {
+    foreach ($editorStateFiles as $editorStateFile) {
+        $editorStatePath = __DIR__ . '/' . $editorStateFile;
+        if (file_exists($editorStatePath) && !is_writable($editorStatePath)) {
+            $editorUnwritable[] = 'plugins/editor/' . $editorStateFile;
+        }
+    }
+}
+
+if (!empty($editorUnwritable)) {
+    $pluginCalledBelowContent .= '
+    <div style="margin-top:60px;border-top:2px solid #c00;padding:20px;background:#fdecea;font-family:system-ui,sans-serif;color:#8b0000;">
+        <strong>Editor cannot write its state files.</strong>
+        <p style="margin:8px 0;">Not writable by the web server: <code>' . htmlspecialchars(implode('</code>, <code>', $editorUnwritable)) . '</code></p>
+        <p style="margin:8px 0;">Without these the editor cannot record failed login attempts, so the 15 minute
+        lockout would not apply and passwords could be guessed without limit. Two-factor codes could also be replayed
+        within their 30 second window. The editor will not run until this is fixed.</p>
+        <p style="margin:8px 0 0;">Make the directory writable by the user PHP runs as, for example
+        <code>chmod 755 plugins/editor</code>, and check ownership.</p>
+    </div>';
+    return;
+}
+
 // Handle login POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['swf_editor_password'])) {
     // Drain any buffered output BEFORE authenticating. editor.php runs partway
@@ -51,7 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['swf_editor_password']
         ob_end_clean();
     }
 
-    editor_authenticate($_POST['swf_editor_password']);
+    // The second argument is ignored unless $editorTotpSecret is set in config
+    editor_authenticate($_POST['swf_editor_password'], $_POST['swf_editor_totp'] ?? '');
     $redirect = strtok($_SERVER['REQUEST_URI'], '?') . '?' . http_build_query(['editor' => $_GET['editor'] ?? '']);
 
     if (!headers_sent()) {
@@ -66,9 +131,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['swf_editor_password']
     exit;
 }
 
-$isAuthed = editor_is_authenticated();
-$isLocked = editor_is_locked_out();
+$isAuthed  = editor_is_authenticated();
+$isLocked  = editor_is_locked_out();
 $csrfToken = $isAuthed ? editor_get_csrf_token() : '';
+$totpOn    = editor_totp_enabled();
+
+/*
+    Enrolment screen — ?editor=yourtoken&totp=setup
+
+    Only reachable once you are already logged in, so the password remains the
+    gate even when no second factor exists yet. That is what makes it safe to
+    offer this screen before TOTP has ever been configured.
+*/
+if ($isAuthed && isset($_GET['totp']) && $_GET['totp'] === 'setup') {
+    require_once 'plugins/editor/editor-totp-setup.php';
+
+    $pluginCalledBelowContent .= '
+    <div id="swf-editor-container" style="margin-top:60px;border-top:2px solid #333;padding:30px 20px;background:#f9f9f9;font-family:system-ui,sans-serif;">'
+    . editor_totp_setup_panel(
+        $_GET['editor'] ?? '',
+        $WebsiteTitle ?? '',
+        $WebsiteURL ?? ''
+      )
+    . '</div>';
+
+    return;
+}
 
 // Read and parse the current page metadata + content when authenticated
 $pageMeta       = [];
@@ -144,12 +232,25 @@ ob_start();
 
     <div id="swf-editor-auth" style="max-width:400px;margin:0 auto;text-align:center;">
         <h2 style="font-size:1.2rem;margin-bottom:20px;color:#111;">
-            <?php echo $isLocked ? 'Too many failed attempts. Try again in 15 minutes.' : 'Editor — enter password to continue'; ?>
+            <?php
+            if ($isLocked) {
+                echo 'Too many failed attempts. Try again in 15 minutes.';
+            } elseif ($totpOn) {
+                echo 'Editor — enter password and code to continue';
+            } else {
+                echo 'Editor — enter password to continue';
+            }
+            ?>
         </h2>
         <?php if (!$isLocked): ?>
         <form method="POST" style="display:flex;gap:10px;justify-content:center;">
             <input type="password" name="swf_editor_password" placeholder="Password" autofocus
                 style="padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:1rem;flex:1;">
+            <?php if ($totpOn): ?>
+            <input type="text" name="swf_editor_totp" placeholder="000000" inputmode="numeric"
+                autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" aria-label="Authentication code"
+                style="padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:1rem;width:110px;text-align:center;letter-spacing:0.12em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">
+            <?php endif; ?>
             <button type="submit" style="padding:8px 18px;background:#111;color:#fff;border:none;border-radius:4px;font-size:1rem;cursor:pointer;">Enter</button>
         </form>
         <?php endif; ?>
@@ -161,6 +262,10 @@ ob_start();
         <button onclick="swfShowTab('edit')" id="swf-tab-edit" style="padding:7px 18px;border-radius:4px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:0.9rem;">Edit this page</button>
         <button onclick="swfShowTab('new')"  id="swf-tab-new"  style="padding:7px 18px;border-radius:4px;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer;font-size:0.9rem;">New page</button>
         <span style="flex:1;"></span>
+        <a href="?editor=<?php echo urlencode($_GET['editor'] ?? ''); ?>&amp;totp=setup"
+           style="padding:7px 14px;border-radius:4px;border:1px solid #ccc;background:#fff;color:#888;text-decoration:none;font-size:0.85rem;">
+            <?php echo $totpOn ? 'Two-factor: on' : 'Two-factor: off'; ?>
+        </a>
         <button onclick="swfLogout()" style="padding:7px 14px;border-radius:4px;border:1px solid #ccc;background:#fff;color:#888;cursor:pointer;font-size:0.85rem;">Log out</button>
     </div>
 

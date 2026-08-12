@@ -70,10 +70,38 @@
 
            Set $editorEnabled = false to completely disable the editor.
            When false, zero editor code runs anywhere on the site.
+
+           TWO-FACTOR (OPTIONAL):
+           $editorTotpSecret adds a six-digit code from an authenticator app on
+           top of the password. It is OFF by default — leave it as an empty
+           string and the editor behaves exactly as it always has, with no code
+           field on the login form and nothing extra to configure.
+
+           To switch it on, log into the editor as normal and visit:
+                  yoursite.com/about?editor=yourtoken&totp=setup
+           That screen generates a secret, shows a QR code to scan, lets you
+           confirm your app agrees before you commit, and prints the line to
+           paste back here. Set it back to '' to switch two-factor off again.
+
+           No third-party service is involved. Your authenticator app and this
+           file each hold the same secret and each compute the same code from
+           the current time — nothing is exchanged, and neither side needs an
+           internet connection.
+
+           The value must be Base32 (the letters A-Z and the digits 2-7 only).
+           A plain passphrase will not work: authenticator apps decode what you
+           type as Base32 before hashing it, so the bytes would not match.
+
+           IMPORTANT: unlike the password, this secret cannot be hashed. The
+           server needs the real value in order to recompute codes, so it sits
+           here in plain text. Keep config/.htaccess in place, and keep a copy
+           of the secret somewhere safe — if you lose your phone, the only way
+           back in is to blank this value over FTP or SSH.
         ── */
         $editorEnabled      = false;
         $editorToken        = ''; /* Recommended: a long random string, e.g. bin2hex(random_bytes(16)) */
         $editorPasswordHash = ''; /* Paste your bcrypt hash here */
+        $editorTotpSecret   = ''; /* Optional 2FA. Base32 only (A-Z, 2-7). Empty = off. See notes above. */
         $editorSessionTimeout = 1800; /* Session lifetime in seconds. Default: 1800 (30 minutes) */
     }
 ?>
