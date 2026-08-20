@@ -3,11 +3,13 @@
 <!-- pagedate: 4/20/2026 -->
 <!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
 <!-- pageexcerpt: How to install, configure and use the optional per-page editor plugin. -->
-<!-- pagekeywords: editor, plugin, summernote, password, token, security -->
+<!-- pagekeywords: editor, plugin, summernote, password, token, security, totp, two-factor, 2fa, authenticator -->
 <!-- pageauthor: Scary le Poo -->
 <!-- pagetype: article -->
 
 <p>The page editor is an optional plugin that adds a password-protected editor to the bottom of any page when <code>?editor=yourtoken</code> is appended to the URL. It lets you edit page content and metadata, and create new pages, directly in the browser — with no database and no permanently exposed admin panel.</p>
+
+<p>An optional second factor is also available: a six-digit code from an authenticator app, on top of the password. It is off by default and requires no third-party service.</p>
 
 <p>When <code>$editorEnabled</code> is set to <code>false</code>, zero editor code runs anywhere on the site. It is completely inert.</p>
 
@@ -15,20 +17,66 @@
 
 <h2>Installation</h2>
 
-<p>The editor plugin ships as three PHP files and one <code>.htaccess</code> file, all inside <code>plugins/editor/</code>. They are included in the framework repository. No additional setup is needed beyond configuration.</p>
+<p>The editor plugin ships as six PHP files and an <code>.htaccess</code> file, all inside <code>plugins/editor/</code>. They are included in the framework repository. No additional setup is needed beyond configuration.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>File</th>
+            <th>Purpose</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>editor.php</code></td>
+            <td>The editor interface and login form.</td>
+        </tr>
+        <tr>
+            <td><code>editor-auth.php</code></td>
+            <td>Authentication, sessions, CSRF tokens and the IP lockout.</td>
+        </tr>
+        <tr>
+            <td><code>editor-save.php</code></td>
+            <td>The endpoint that writes pages to disk.</td>
+        </tr>
+        <tr>
+            <td><code>editor-totp.php</code></td>
+            <td>Two-factor code generation and verification. Inert unless you switch it on.</td>
+        </tr>
+        <tr>
+            <td><code>editor-totp-setup.php</code></td>
+            <td>The two-factor enrolment screen.</td>
+        </tr>
+        <tr>
+            <td><code>editor-qr.php</code></td>
+            <td>Draws the enrolment QR code. Optional — see <a href="#qr">below</a>.</td>
+        </tr>
+        <tr>
+            <td><code>.htaccess</code></td>
+            <td>Blocks direct web access to the plugin's <code>.json</code> state files.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>The plugin also expects <code>config/.htaccess</code> to be present, denying web access to the configuration directory. This ships with the framework and matters more than usual if you enable two-factor — see <a href="#secret-safety">Keeping the secret safe</a>.</p>
+
+<p><code>plugins/editor/</code> must be writable by the user PHP runs as. The editor keeps two small state files there and will refuse to run if it cannot write them.</p>
 
 <hr/>
 
 <h2>Configuration</h2>
 
-<p>All editor settings live in <code>config/config.php</code> inside the <code>if ($loadplugins == true)</code> block. There are three values to set:</p>
+<p>All editor settings live in <code>config/config.php</code> inside the <code>if ($loadplugins == true)</code> block. There are five values:</p>
 
 <pre>
 $editorEnabled      = true;
 $editorToken        = 'your-random-token';
 $editorPasswordHash = '$2y$10$...';
+$editorTotpSecret   = '';
 $editorSessionTimeout = 1800;
 </pre>
+
+<p><code>$editorTotpSecret</code> is optional. Left as an empty string, two-factor is off and the editor behaves exactly as it always has — no code field on the login form and nothing else to configure.</p>
 
 <hr/>
 
@@ -78,6 +126,90 @@ $editorToken = 'a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e';
 
 <hr/>
 
+<h2>Two-Factor Authentication</h2>
+
+<p>Setting <code>$editorTotpSecret</code> adds a six-digit code to the login form, alongside your password. The code comes from an authenticator app on your phone — Google Authenticator, Aegis, 1Password, Ente, or any other TOTP app.</p>
+
+<p>It is entirely optional. Leave the value as an empty string and nothing changes.</p>
+
+<h3>How it works</h3>
+
+<p>No third-party service is involved at any point, and nothing is exchanged over the network. Your authenticator app is an offline calculator: it holds a secret and reads the clock. The server holds the same secret and reads its own clock. Both compute the same number independently, and the server compares what you typed against what it computed.</p>
+
+<p>The maths is <a href="https://datatracker.ietf.org/doc/html/rfc6238" target="_blank" rel="noopener">RFC 6238</a>. Divide the current Unix timestamp by 30 to get a counter, HMAC-SHA1 it with the secret, then truncate the result to six digits. PHP ships every piece needed, so the implementation has no dependencies, no build step and no external calls.</p>
+
+<h3>Turning it on</h3>
+
+<p><strong>Step 1.</strong> Log into the editor as normal, with just your password.</p>
+
+<p><strong>Step 2.</strong> Click <strong>Two-factor: off</strong> in the editor toolbar, or go directly to:</p>
+
+<pre>
+https://yoursite.com/about?editor=yourtoken&amp;totp=setup
+</pre>
+
+<p>The enrolment screen is only reachable once you are already logged in, so your password remains the gate even before a second factor exists.</p>
+
+<p><strong>Step 3.</strong> Scan the QR code with your authenticator app, or type the key in by hand — it is shown in groups of four to make that easier. The app will use six digits, a 30-second period and SHA1, which are the defaults everywhere, so you should not need to change any settings.</p>
+
+<p><strong>Step 4.</strong> Type the code your app is showing into the test box and press <strong>Test code</strong>. This only checks the code — it is not used up, and you can test as many times as you like. Do not skip this step. It is much easier to sort out a mismatch now than after you have committed the secret and logged out.</p>
+
+<p><strong>Step 5.</strong> Copy the line the screen prints and paste it into <code>config/config.php</code>:</p>
+
+<pre>
+$editorTotpSecret   = 'LL2ITCZZLBF4UVYMCOQDTYXUJIFPCNCD';
+</pre>
+
+<p><strong>Step 6.</strong> Log out and back in. You will be asked for a code from now on.</p>
+
+<p>The enrolment screen never writes to <code>config.php</code> — it prints the line and you paste it. The editor does not need write access to your configuration.</p>
+
+<h3>Logging in with a code</h3>
+
+<p>The login form gains a second field next to the password box. Enter your password and the six digits your app is currently showing.</p>
+
+<p>Codes are accepted within 30 seconds either side of the server's clock, which absorbs the usual drift on shared hosting. A code that has been used successfully cannot be used again, even while it is still on screen, so watching someone log in over their shoulder does not help you.</p>
+
+<p>Failed codes count towards the same lockout as failed passwords: five failures from one IP disables the login form for 15 minutes.</p>
+
+<h3>The secret must be Base32</h3>
+
+<p><code>$editorTotpSecret</code> must contain only the letters A–Z and the digits 2–7. A plain passphrase will not work. Authenticator apps decode whatever you type as Base32 before hashing it, so a passphrase would decode to different bytes on the app's side than on the server's, and every code would be rejected.</p>
+
+<p>Use the enrolment screen to generate a valid secret rather than inventing one. If the configured value is not valid Base32, the editor refuses to run and tells you so, rather than silently rejecting every code you type.</p>
+
+<h3 id="secret-safety">Keeping the secret safe</h3>
+
+<p>Unlike your password, this secret cannot be hashed. The server needs the real value in order to recompute codes, so it sits in <code>config/config.php</code> as plain text.</p>
+
+<p>That is fine as long as Apache executes the file, but if PHP ever stops handling it — the module disabled during an upgrade, a stray <code>config.php.bak</code>, a misconfigured vhost — the file would be served as text and the secret handed to whoever asked. This is what <code>config/.htaccess</code> is for. Make sure it is in place and that nothing in your host's configuration overrides it.</p>
+
+<p>Keep a copy of the secret somewhere safe as well, such as a password manager. See <a href="#lost-phone">If you lose your phone</a>.</p>
+
+<h3>Turning it off</h3>
+
+<p>Set the value back to an empty string:</p>
+
+<pre>
+$editorTotpSecret   = '';
+</pre>
+
+<p>The code field disappears from the login form and the editor goes back to password only. Remove the entry from your authenticator app too, since it will no longer be checked.</p>
+
+<h3 id="lost-phone">If you lose your phone</h3>
+
+<p>There are no backup codes and no recovery email. If you cannot produce a code, the way back in is to edit <code>config/config.php</code> over FTP or SSH and blank the value, which switches two-factor off and lets you log in with your password alone.</p>
+
+<p>To avoid needing that: keep a copy of the Base32 secret in a password manager, or use an authenticator app that syncs or exports its entries. Adding the same secret to a second device also works — TOTP has no concept of a single registered device.</p>
+
+<h3 id="qr">The QR code file is optional</h3>
+
+<p><code>editor-qr.php</code> draws the enrolment QR code in pure PHP. It exists so that your secret is never sent to a hosted QR generator, which would rather defeat the point of the exercise.</p>
+
+<p>It is the largest file in the plugin by some margin. If you would rather not carry it, delete it — the enrolment screen falls back to showing the key for manual entry, which every authenticator app supports. Nothing else in the editor depends on it.</p>
+
+<hr/>
+
 <h2>Accessing the Editor</h2>
 
 <p>Once configured, append <code>?editor=yourtoken</code> to any page URL:</p>
@@ -88,7 +220,7 @@ https://yoursite.com/posts/my-post?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
 https://yoursite.com/documentation/introduction?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
 </pre>
 
-<p>If the token matches, a password prompt appears at the bottom of the page. Enter your password to unlock the editor. The session lasts for the duration set in <code>$editorSessionTimeout</code> (default 30 minutes) and expires automatically on inactivity.</p>
+<p>If the token matches, a password prompt appears at the bottom of the page — with a second field for your authenticator code if two-factor is enabled. Enter your credentials to unlock the editor. The session lasts for the duration set in <code>$editorSessionTimeout</code> (default 30 minutes) and expires automatically on inactivity.</p>
 
 <p>If the token does not match, the page renders normally with no indication that an editor exists.</p>
 
@@ -127,7 +259,7 @@ $editorSessionTimeout = 3600;  // 1 hour
 $editorSessionTimeout = 900;   // 15 minutes
 </pre>
 
-<p>When a session expires you will be prompted to enter your password again.</p>
+<p>When a session expires you will be prompted to enter your password again — and your code, if two-factor is enabled.</p>
 
 <hr/>
 
@@ -152,8 +284,16 @@ $editorSessionTimeout = 900;   // 15 minutes
             <td>Verifies identity on login. The plaintext password is never stored anywhere.</td>
         </tr>
         <tr>
+            <td>Two-factor code (optional)</td>
+            <td>When <code>$editorTotpSecret</code> is set, a six-digit time-based code from your authenticator app is required alongside the password. Defends against a leaked or reused password.</td>
+        </tr>
+        <tr>
+            <td>Replay protection</td>
+            <td>A code stays valid for its full 30-second window, so the same digits would otherwise work twice. The last accepted counter is recorded and anything at or below it is rejected.</td>
+        </tr>
+        <tr>
             <td>IP-based lockout</td>
-            <td>After 5 failed login attempts from the same IP address, the login form is disabled for 15 minutes. Persists across cookie resets.</td>
+            <td>After 5 failed login attempts from the same IP address, the login form is disabled for 15 minutes. Persists across cookie resets. Failed codes count the same as failed passwords.</td>
         </tr>
         <tr>
             <td>Session regeneration</td>
@@ -175,8 +315,34 @@ $editorSessionTimeout = 900;   // 15 minutes
             <td>Path validation</td>
             <td>All file write operations validate that the target path resolves inside <code>pages/</code>. Path traversal attempts are rejected.</td>
         </tr>
+        <tr>
+            <td>Misconfiguration guards</td>
+            <td>The editor refuses to run — rather than failing quietly — if its state files cannot be written or if the two-factor secret is not valid Base32.</td>
+        </tr>
     </tbody>
 </table>
+
+<p>It is worth being clear about what the second factor does and does not buy you. It protects against a password that has leaked, been reused, or been guessed. It does not protect against a hijacked session or a compromised server, and the secret itself sits in plain text on disk because verifying a code requires the real value. Worth having, but a narrower gain than two-factor is usually advertised as.</p>
+
+<hr/>
+
+<h2>Troubleshooting</h2>
+
+<h3>Every code is rejected</h3>
+
+<p>Almost always one of two things. Either the secret is not what your app has — regenerate it from the enrolment screen and re-add it — or the server clock has drifted. Codes are accepted within 30 seconds either side of the server's time, so a clock more than half a minute out will reject everything no matter how carefully you type. Check the server's time before suspecting anything else.</p>
+
+<h3>"Two-factor secret is not valid Base32"</h3>
+
+<p>The value in <code>config.php</code> contains characters outside A–Z and 2–7 — most often because a passphrase was typed in instead of a generated key. Use the enrolment screen to produce a valid one, or set the value back to an empty string to switch two-factor off.</p>
+
+<h3>"Editor cannot write its state files"</h3>
+
+<p><code>plugins/editor/</code> is not writable by the user PHP runs as. The editor stores its failed-attempt counts and its last accepted code counter there, and without them the lockout and replay protections would silently stop working — so it refuses to run rather than pretending to be protected. Make the directory writable and check its ownership.</p>
+
+<h3>The Two-factor link in the toolbar does nothing useful</h3>
+
+<p>The enrolment screen requires you to be logged in. If your session expired between loading the page and clicking the link, log in again and retry.</p>
 
 <hr/>
 

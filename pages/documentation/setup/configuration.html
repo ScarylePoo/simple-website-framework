@@ -3,7 +3,7 @@
 <!-- pagedate: 4/20/2026 -->
 <!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
 <!-- pageexcerpt: A complete reference for every option available in config/config.php. -->
-<!-- pagekeywords: configuration, config.php, settings, options, reference -->
+<!-- pagekeywords: configuration, config.php, settings, options, reference, totp, two-factor -->
 <!-- pageauthor: Scary le Poo -->
 <!-- pagetype: article -->
 
@@ -147,8 +147,21 @@ $WebsiteLanguageLocale = "en_US";
 <pre><code class="language-php">$editorPasswordHash = '$2y$10$...';
 </code></pre>
 <hr>
+<h3><code>$editorTotpSecret</code></h3>
+<p><strong>Type:</strong> <code>string</code> | <strong>Default:</strong> <code>''</code> (two-factor disabled)</p>
+<p>Optional two-factor authentication for the editor. When set, the login form asks for a six-digit code from an authenticator app in addition to the password. Left as an empty string, two-factor is off and the editor behaves exactly as it does without this setting — no code field, nothing else to configure.</p>
+<p>No third-party service is involved. Your authenticator app and the server each hold the same secret and each compute the same code from the current time; nothing is exchanged over the network.</p>
+<p>The value must be <strong>Base32</strong> — the letters A–Z and the digits 2–7 only. A passphrase will not work, because authenticator apps decode what you type as Base32 before hashing it. Do not invent a value by hand; generate one from the editor's enrolment screen, which also gives you a QR code to scan and lets you verify a code before you commit:</p>
+<pre><code>https://yoursite.com/about?editor=yourtoken&amp;totp=setup
+</code></pre>
+<pre><code class="language-php">$editorTotpSecret = 'LL2ITCZZLBF4UVYMCOQDTYXUJIFPCNCD';
+</code></pre>
+<p>If the configured value is not valid Base32, the editor refuses to run and says so, rather than silently rejecting every code you type.</p>
+<p><strong>This secret cannot be hashed.</strong> Unlike <code>$editorPasswordHash</code>, the server needs the real value in order to recompute codes, so it is stored here in plain text. Make sure <code>config/.htaccess</code> is in place denying web access to this directory, and keep a copy of the secret somewhere safe — if you lose your phone, the only way back in is to blank this value over FTP or SSH.</p>
+<p>See the <a href="documentation/setup/editor">Editor</a> page for the full walkthrough.</p>
+<hr>
 <h3><code>$editorSessionTimeout</code></h3>
 <p><strong>Type:</strong> <code>int</code> | <strong>Default:</strong> <code>1800</code></p>
-<p>How long an authenticated editor session lasts without activity, in seconds. After this period the session expires and the password must be entered again.</p>
+<p>How long an authenticated editor session lasts without activity, in seconds. After this period the session expires and the password must be entered again — along with a code, if two-factor is enabled.</p>
 <pre><code class="language-php">$editorSessionTimeout = 1800; // 30 minutes
 </code></pre>
