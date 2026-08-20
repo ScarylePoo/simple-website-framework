@@ -31,14 +31,44 @@ $patterns = [
     'pagetitle'   => '/<!--\s+pagetitle:(.*?)\s+-->/s',
     'pagedate'    => '/<!--\s+pagedate:(.*?)\s+-->/s',
     'pageexcerpt' => '/<!--\s+pageexcerpt:(.*?)\s+-->/s',
-    'pageimage'   => '/<!--\s+pageimage:(.*?)\s+-->/s' // Image pattern
+    'pageimage'   => '/<!--\s+pageimage:(.*?)\s+-->/s', // Image pattern
+    'pagecategory' => '/<!--\s+pagecategory:(.*?)\s+-->/s' // Optional comma-separated categories. Untagged posts count as "uncategorized".
 ];
+
+/* CATEGORY FEEDS */
+// The ?rss parameter doubles as the category selector:
+//   ?rss                  -> all posts (unchanged, backward compatible)
+//   ?rss=all              -> all posts (explicit)
+//   ?rss=tutorials        -> only posts in the "tutorials" category
+//   ?rss=tutorials,seo    -> posts in ANY of the listed categories
+//   ?rss=uncategorized    -> only posts with no pagecategory tag
+// This works because index.php handles ?rss before top-cache.php is included,
+// so RSS requests never touch the cache and query strings are safe here.
+$rssFilterCategories = [];
+if (!empty($_GET['rss']) && strtolower(trim($_GET['rss'])) !== 'all') {
+    foreach (explode(',', $_GET['rss']) as $cat) {
+        $cat = strtolower(trim($cat));
+        // Same slug rules as category pages; also drops anything weird from the query string.
+        if ($cat !== '' && preg_match('/^[a-z0-9\-]+$/', $cat)) {
+            $rssFilterCategories[] = $cat;
+        }
+    }
+}
 
 // Site information
 $siteTitle       = $WebsiteTitle;
 $siteLink        = $WebsiteURL;
 $siteDescription = $WebsiteDescription;
 $defaultImage    = $WebsiteImage; // Default image URL
+
+// Filtered feeds get the category name(s) in the channel title so subscribers
+// can tell their feeds apart (e.g. "My Site – Tutorials").
+if (!empty($rssFilterCategories)) {
+    $prettyNames = array_map(function ($cat) {
+        return ucwords(str_replace('-', ' ', $cat));
+    }, $rssFilterCategories);
+    $siteTitle .= ' – ' . implode(', ', $prettyNames);
+}
 
 // Initialize the RSS feed
 echo '<?xml version="1.0" encoding="UTF-8" ?>' . "\n";
@@ -72,6 +102,20 @@ foreach (new DirectoryIterator($postsDir) as $fileInfo) {
     }
 
     if (empty($pageData['pagetitle']) || empty($pageData['pagedate'])) continue;
+
+    // Parse the post's categories. Optional — untagged posts are "uncategorized".
+    // Same parsing rules as the postarchives layouts.
+    $postCategories = [];
+    if (!empty($pageData['pagecategory'])) {
+        foreach (explode(',', $pageData['pagecategory']) as $cat) {
+            $cat = strtolower(trim($cat));
+            if ($cat !== '') { $postCategories[] = $cat; }
+        }
+    }
+    if (empty($postCategories)) { $postCategories = ['uncategorized']; }
+
+    // Apply the category filter: keep the post if it's in ANY requested category.
+    if (!empty($rssFilterCategories) && !array_intersect($rssFilterCategories, $postCategories)) continue;
 
     $url      = $siteLink . '/posts/' . $filename;
     $pubDate  = strtotime($pageData['pagedate']); // Use timestamp for sorting

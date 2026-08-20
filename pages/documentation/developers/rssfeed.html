@@ -15,6 +15,17 @@
 </code></pre>
 <p>The feed is generated dynamically on each request. It reads all <code>.html</code> files in <code>pages/posts/</code>, extracts their metadata, sorts them by date (newest first), and outputs a valid RSS 2.0 XML document.</p>
 <hr/>
+<h2>Category Feeds</h2>
+<p>The <code>?rss</code> parameter doubles as a category selector. Give it a value to filter the feed to one or more categories (see <a href="/documentation/developers/postsandcategories">Posts, Categories &amp; Filtering</a> for how categories are assigned):</p>
+<pre><code>https://example.com/?rss                        → all posts (default)
+https://example.com/?rss=all                    → all posts (explicit)
+https://example.com/?rss=tutorials              → only the "tutorials" category
+https://example.com/?rss=tutorials,seo          → posts in either category
+https://example.com/?rss=uncategorized          → only untagged posts
+</code></pre>
+<p>A post is included if it belongs to <em>any</em> of the listed categories. Filtered feeds get the category name appended to the channel title (e.g. <em>"My Site – Tutorials"</em>) so subscribers can tell them apart in their reader. Category names in the URL follow the same rules as category pages: lowercase letters, numbers, and hyphens — anything else is ignored.</p>
+<p>Requesting a category that doesn't exist produces a valid, empty feed rather than an error. Note that because these are query strings, RSS requests are never cached — the <code>?rss</code> check in <code>index.php</code> runs before the caching layer loads, so every feed request renders fresh.</p>
+<hr/>
 <h2>What Gets Included</h2>
 <p>Only posts that have <strong>all four</strong> of the following metadata fields populated are included in the feed:</p>
 <ul>

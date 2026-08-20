@@ -32,6 +32,7 @@
 					preg_match('/<!--\s+pagedate:(.*?)\s+-->/s', $contents, $dateMatch); //This needs to be mm/dd/yyyy format
 					preg_match('/<!--\s+pageimage:(.*?)\s+-->/s', $contents, $imageMatch); //Image filename with extension
 					preg_match('/<!--\s+pageexcerpt:(.*?)\s+-->/s', $contents, $excerptMatch); //No real formatting here, just a blurb
+					preg_match('/<!--\\s+pagecategory:(.*?)\\s+-->/s', $contents, $categoryMatch); //Optional. Comma-separated category list. Posts without it are treated as "uncategorized".
 					preg_match('/<!--\s+pageauthor:(.*?)\s+-->/s', $contents, $authorMatch); //No real formatting here, just a blurb
 
 					// If all details are found, add them to the array
@@ -41,9 +42,33 @@
 						$image = trim($imageMatch[1]);
 						$excerpt = trim($excerptMatch[1]);
 						$author = trim($authorMatch[1]);
-						$fileDetails[] = array('title' => $title, 'date' => $date, 'image' => $image, 'excerpt' => $excerpt, 'author' => $author, 'filename' => $file);
+						// Categories are OPTIONAL. Legacy posts without a pagecategory tag must never be
+						// dropped from archives, so this is deliberately NOT part of the required-fields
+						// check above. Untagged posts are treated as belonging to "uncategorized".
+						$categories = array();
+						if ($categoryMatch) {
+							foreach (explode(',', $categoryMatch[1]) as $cat) {
+								$cat = strtolower(trim($cat));
+								if ($cat !== '') { $categories[] = $cat; }
+							}
+						}
+						if (empty($categories)) { $categories = array('uncategorized'); }
+						$fileDetails[] = array('title' => $title, 'date' => $date, 'image' => $image, 'excerpt' => $excerpt, 'author' => $author, 'filename' => $file, 'categories' => $categories);
 					}
 				}
+
+				/* CATEGORY FILTER */
+				// $postcategory comes from this page's own <!-- postcategory: ... --> tag,
+				// extracted by required/vitalfunctions.php. When the tag is absent (e.g. the
+				// main archives page), no filtering happens and every post is listed.
+				// A page with <!-- postcategory: uncategorized --> lists all untagged posts.
+				if (!empty($postcategory)) {
+					$filterCategory = strtolower(trim($postcategory));
+					$fileDetails = array_values(array_filter($fileDetails, function ($post) use ($filterCategory) {
+						return in_array($filterCategory, $post['categories']);
+					}));
+				}
+				/* END CATEGORY FILTER */
 
 				/* SORTING METHODS */
 
@@ -72,6 +97,13 @@
 					echo '<div class="column flex-basis-300">';
 					$dateFormatted = date('m/d/Y', strtotime($fileDetail['date']));
 					echo '<b><a href="' . $postsFolder . '/' . basename($fileDetail['filename'], '.html') . '">' . $fileDetail['title'] . '</a></b> </br> ' . $dateFormatted . '</br>' . 'by <i>' . $fileDetail['author'] . '</i></br>';
+					// Category labels. By convention each category has a page of the same name at the
+					// pages root (e.g. pages/tutorials.html), so the label links to /tutorials.
+					$categoryLinks = array();
+					foreach ($fileDetail['categories'] as $cat) {
+						$categoryLinks[] = '<a href="' . $cat . '">' . ucwords(str_replace('-', ' ', $cat)) . '</a>';
+					}
+					echo 'in ' . implode(', ', $categoryLinks) . '</br>';
 					if (file_exists($fileDetail['image'])) {
 						echo '<img src="' . $fileDetail['image'] . '" alt="' . $fileDetail['title'] . '"><br>';
 					} else {

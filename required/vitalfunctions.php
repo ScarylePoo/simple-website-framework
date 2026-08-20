@@ -22,6 +22,8 @@
 		'pagekeywords' => '/<!--\s+pagekeywords:(.*?)\s+-->/s',        // Pattern to extract keywords
 		'pageauthor' => '/<!--\s+pageauthor:(.*?)\s+-->/s',            // Pattern to extract author
 		'pagetype' => '/<!--\s+pagetype:(.*?)\s+-->/s',                // Pattern to extract page content type (E.G. website, article, blog, profile, video, music, book, product)
+		'pagecategory' => '/<!--\s+pagecategory:(.*?)\s+-->/s',        // Pattern to extract the categories a POST belongs to (comma-separated). Optional — posts without it are treated as "uncategorized" by the archive templates.
+		'postcategory' => '/<!--\s+postcategory:(.*?)\s+-->/s',        // Pattern to extract the category filter on an ARCHIVE page. When set, the postarchives layouts only list posts whose pagecategory contains this value. "uncategorized" lists all untagged posts.
 		
 		/* Here is a nice copy pastable list of tags for posts and pages */
 		/*
@@ -33,6 +35,11 @@
 			<!-- pagekeywords: -->
 			<!-- pageauthor: -->
 			<!-- pagetype: -->
+			<!-- pagecategory: -->
+		*/
+		/* And this one is only for post archive (category) pages */
+		/*
+			<!-- postcategory: -->
 		*/
 
 		// You can add more patterns here as needed

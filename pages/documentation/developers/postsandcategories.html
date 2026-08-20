@@ -1,0 +1,80 @@
+<!-- pagetitle: Posts, Categories & Filtering -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 8/19/2026 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How posts work, how to organize them into categories with the pagecategory tag, how to build category pages, and how to write custom archive filters. -->
+<!-- pagekeywords: posts, categories, pagecategory, postcategory, filtering, archives, uncategorized -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>Posts are ordinary pages that live in <code>pages/posts/</code> and carry a few extra metadata tags. The post archive layouts (<code>postarchives</code>, <code>postarchives-notitle</code>, <code>postarchives-styled</code>) scan that folder, read each post's metadata, and render a sorted, paginated listing. This page covers how posts are collected, how to organize them into categories, and how to write your own archive filters.</p>
+<hr/>
+<h2>Anatomy of a Post</h2>
+<p>A post is any <code>.html</code> file in <code>pages/posts/</code>. For a post to appear in the archives, it must have all four of these tags:</p>
+<pre><code class="language-html">&lt;!-- pagetitle: My Post Title --&gt;
+&lt;!-- pagedate: 8/19/2026 --&gt;
+&lt;!-- pageimage: pages/posts/images/mypost.webp --&gt;
+&lt;!-- pageexcerpt: A short blurb shown in the archive listing. --&gt;
+</code></pre>
+<p>A post missing any of those four is silently skipped by the archive layouts. The <code>postarchives-styled</code> layout also displays <code>pageauthor</code>, and all of the usual page tags (<code>pagelayout</code>, <code>pagekeywords</code>, <code>pagetype</code>) work on posts exactly as they do on pages.</p>
+<hr/>
+<h2>Assigning Categories to a Post</h2>
+<p>Categories are assigned with a single optional tag, <code>pagecategory</code>. It takes a comma-separated list, so a post can belong to any number of categories:</p>
+<pre><code class="language-html">&lt;!-- pagecategory: tutorials, seo --&gt;
+</code></pre>
+<p>Category names are matched case-insensitively and whitespace around commas is ignored, so <code>Tutorials, SEO</code> and <code>tutorials,seo</code> are the same thing. Use lowercase, hyphenated names (<code>game-dev</code>, not <code>Game Dev</code>) — the name doubles as the category page's URL.</p>
+<p><strong>The tag is optional.</strong> A post without a <code>pagecategory</code> tag still appears in the main archives exactly as before, and is automatically treated as belonging to a built-in category called <code>uncategorized</code>. This means existing sites upgrade cleanly: nothing needs to be edited, and posts join categories as you tag them.</p>
+<hr/>
+<h2>Creating a Category Page</h2>
+<p>A category page is a normal page that uses one of the post archive layouts plus one extra tag, <code>postcategory</code>, which tells the layout to only list posts belonging to that category:</p>
+<pre><code class="language-html">&lt;!-- pagetitle: Tutorials --&gt;
+&lt;!-- pagelayout: postarchives-styled --&gt;
+&lt;!-- postcategory: tutorials --&gt;
+</code></pre>
+<p>Save that as <code>pages/tutorials.html</code> and <code>yoursite.com/tutorials</code> becomes the archive for the <code>tutorials</code> category. That's the whole mechanism — no configuration, no registry of categories. A category exists as soon as one post claims it and one page filters on it.</p>
+<p><strong>Naming convention:</strong> name the category page after the category, at the root of <code>pages/</code>. The <code>postarchives-styled</code> layout renders each post's categories as links built from this convention (the category <code>tutorials</code> links to <code>/tutorials</code>), so following it makes those links work automatically.</p>
+<p>Your main archives page needs no changes. Any archive page <em>without</em> a <code>postcategory</code> tag lists every post, site-wide, regardless of category.</p>
+<hr/>
+<h2>The Uncategorized Category</h2>
+<p>Posts with no <code>pagecategory</code> tag belong to the built-in <code>uncategorized</code> category. You can create a page for it like any other category:</p>
+<pre><code class="language-html">&lt;!-- pagetitle: Uncategorized --&gt;
+&lt;!-- pagelayout: postarchives-styled --&gt;
+&lt;!-- postcategory: uncategorized --&gt;
+</code></pre>
+<p>This is especially useful when adopting categories on an existing site — it's a live to-do list of every post that still needs tagging. Once every post is tagged, the page simply renders empty (or you can delete it).</p>
+<hr/>
+<h2>Watch Out for Typos</h2>
+<p>Because there is no central list of categories, a typo creates an orphan: a post tagged <code>pagecategory: tutorails</code> silently disappears from the <code>tutorials</code> page. If a post isn't showing up where you expect, check the spelling of its <code>pagecategory</code> tag first — it's matched exactly (after lowercasing and trimming) against the page's <code>postcategory</code> value.</p>
+<hr/>
+<h2>How the Filter Works (For Theme Developers)</h2>
+<p>Inside the archive layouts, each post's categories are parsed into a <code>categories</code> array on its <code>$fileDetails</code> entry, and the filter runs between collection and sorting:</p>
+<pre><code class="language-php">if (!empty($postcategory)) {
+    $filterCategory = strtolower(trim($postcategory));
+    $fileDetails = array_values(array_filter($fileDetails, function ($post) use ($filterCategory) {
+        return in_array($filterCategory, $post['categories']);
+    }));
+}
+</code></pre>
+<p><code>$postcategory</code> arrives automatically — it's extracted from the current page's metadata by <code>required/vitalfunctions.php</code> like every other page tag. One important rule when customizing: the category tag must <strong>never</strong> be added to the required-fields check (<code>if ($titleMatch &amp;&amp; $dateMatch &amp;&amp; ...)</code>). It is deliberately optional; requiring it would make every untagged post vanish from every archive.</p>
+<hr/>
+<h2>Custom Filtering</h2>
+<p>The same pattern extends to any metadata. Everything the archive knows about each post lives in the <code>$fileDetails</code> array, so custom archive layouts can filter on anything by adding an <code>array_filter</code> before the sorting step. Some examples:</p>
+<p><strong>Only posts from a date range:</strong></p>
+<pre><code class="language-php">$fileDetails = array_values(array_filter($fileDetails, function ($post) {
+    return strtotime($post['date']) >= strtotime('1/1/2026');
+}));
+</code></pre>
+<p><strong>Only posts by a specific author</strong> (the styled layout already extracts <code>author</code>; add the <code>pageauthor</code> preg_match to the other layouts if you need it there):</p>
+<pre><code class="language-php">$fileDetails = array_values(array_filter($fileDetails, function ($post) {
+    return $post['author'] === 'Scary le Poo';
+}));
+</code></pre>
+<p><strong>Combining conditions</strong> — a category page showing only recent posts in that category — is just both checks in one callback. To filter on a tag the layouts don't currently extract (say <code>pagetype</code>), add one <code>preg_match</code> to the collection loop, store the value in the <code>$fileDetails[] = array(...)</code> line, and filter on it.</p>
+<p>Filters run on every render, but with caching enabled that cost is paid once per cache lifetime, not per visitor.</p>
+<hr/>
+<h2>Caching Notes</h2>
+<p>Category pages are ordinary pages with ordinary URLs, so they work with the HTML cache with no special handling — each category page gets its own cache file, and pagination works because the <code>?page</code> parameter is preserved in the cache key. This is the main reason categories are metadata-driven rather than query-string-driven (<code>archives?category=foo</code> would not survive the cache).</p>
+<p>The usual caching caveat applies: after tagging posts or creating category pages on a live site with caching enabled, delete the relevant <code>cached-*.html</code> files (or wait out the cache lifetime) to see the changes.</p>
+<hr/>
+<h2>RSS</h2>
+<p>The RSS feed understands categories too. <code>?rss</code> still lists every post, and giving the parameter a value filters the feed: <code>?rss=tutorials</code> for one category, <code>?rss=tutorials,seo</code> for several (a post matches if it's in any of them), and <code>?rss=uncategorized</code> for untagged posts. Filtered feeds append the category name to the channel title. See <a href="/documentation/developers/rssfeed">The RSS Feed</a> for details.</p>
