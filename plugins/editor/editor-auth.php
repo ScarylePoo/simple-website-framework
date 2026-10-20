@@ -208,10 +208,49 @@ function editor_logout() {
 function editor_check_url_token() {
     global $editorToken;
     if (empty($editorToken)) {
-        return true; // No token configured — allow through
+        return false; // No token configured — nothing can match
     }
     $supplied = $_GET['editor'] ?? '';
     return hash_equals($editorToken, $supplied);
+}
+
+/*
+    "Remember this device" cookie for the token.
+
+    Once the token has been presented in a URL, /edit/ sets this cookie so the
+    person does not have to carry the token around for the next 30 days on
+    that device. The cookie value is an HMAC of the token keyed by the password
+    hash — not the token itself — so it discloses nothing if read, and changing
+    either the token or the password invalidates every remembered device.
+
+    It is deliberately separate from the PHP session: the session is the
+    login (minutes), this is the device (weeks). Logging out keeps it.
+*/
+define('SWF_EDITOR_TOKEN_COOKIE', 'swf_editor_device');
+define('SWF_EDITOR_TOKEN_COOKIE_DAYS', 30);
+
+function editor_token_cookie_value() {
+    global $editorToken, $editorPasswordHash;
+    return hash_hmac('sha256', 'device:' . $editorToken, (string) $editorPasswordHash);
+}
+
+function editor_set_token_cookie() {
+    global $editorCookieSecure;
+    setcookie(SWF_EDITOR_TOKEN_COOKIE, editor_token_cookie_value(), [
+        'expires'  => time() + SWF_EDITOR_TOKEN_COOKIE_DAYS * 86400,
+        'path'     => '/',
+        'secure'   => (bool) $editorCookieSecure,
+        'httponly' => true,
+        'samesite' => 'Strict',
+    ]);
+}
+
+function editor_has_token_cookie() {
+    global $editorToken;
+    if (empty($editorToken) || empty($_COOKIE[SWF_EDITOR_TOKEN_COOKIE])) {
+        return false;
+    }
+    return hash_equals(editor_token_cookie_value(), (string) $_COOKIE[SWF_EDITOR_TOKEN_COOKIE]);
 }
 
 /*

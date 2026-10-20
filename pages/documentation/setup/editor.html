@@ -118,9 +118,11 @@ $2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
 
 <h2>Setting the URL Token</h2>
 
-<p>The <code>$editorToken</code> is an optional secret string. When it is set, <code>/edit/</code> returns the site's ordinary 404 page to anyone who has not presented the token once in their browser session — not even a login form is shown. This keeps the editor's existence hidden from casual probing. You present it by visiting <code>/edit/?editor=yourtoken</code> (or the old <code>anypage?editor=yourtoken</code>); after that, every link inside the editor stays clean for the rest of the session.</p>
+<p>The <code>$editorToken</code> is a secret string, and it is required. Until the token has been presented on a device, <code>/edit/</code> returns the site's ordinary 404 page — not a login form, not an error, nothing that distinguishes it from any other address that does not exist. Bots that scan for admin screens find nothing to catalogue and nothing to hammer. That is the whole point of the token, and it is why the editor refuses to run without one.</p>
 
-<p>Leave it as an empty string and <code>/edit/</code> is reachable directly. The password, lockout and optional two-factor still apply either way; the token only controls whether the login page can be found.</p>
+<p>You present it once per device by visiting <code>/edit/?editor=yourtoken</code> (or the old <code>anypage?editor=yourtoken</code>). The editor then sets a cookie that remembers the device for 30 days, and plain <code>/edit/</code> works from then on. The cookie does not contain the token — it holds a keyed hash of it — and changing either the token or the password invalidates every remembered device at once.</p>
+
+<p>A wrong token counts as a failed login attempt against the same per-IP lockout as a wrong password, so the token cannot be guessed at for free. The response is a 404 either way.</p>
 
 <p>Choose something long and random. The easiest way is to generate one at the command line:</p>
 
@@ -239,9 +241,11 @@ https://yoursite.com/edit/?page=posts/my-post
 
 <p>Both open the editor with that page already loaded. The first is the address the editor has always used, so old bookmarks keep working.</p>
 
+<p><strong>For end users:</strong> bookmark <code>https://yoursite.com/edit/?editor=yourtoken</code>. The first visit on any device remembers it for 30 days; after that, plain <code>/edit/</code> works too. Nobody has to edit a URL by hand.</p>
+
 <p>You will see a password prompt — with a second field for your authenticator code if two-factor is enabled. The session lasts for the duration set in <code>$editorSessionTimeout</code> (default 30 minutes) and expires automatically on inactivity.</p>
 
-<p>If a token is configured and it is missing or wrong, you get the site's normal 404 page with no indication that an editor exists.</p>
+<p>If the token is missing on a device that has not been remembered, or wrong, you get the site's normal 404 page with no indication that an editor exists.</p>
 
 <hr/>
 
@@ -303,8 +307,12 @@ $editorSessionTimeout = 900;   // 15 minutes
     </thead>
     <tbody>
         <tr>
-            <td>URL token (optional)</td>
-            <td>Makes <code>/edit/</code> answer with the site's 404 page until the token has been presented once in the browser session. No login form is shown without it.</td>
+            <td>URL token (required)</td>
+            <td>Makes <code>/edit/</code> answer with the site's 404 page until the token has been presented once on the device. No login form is ever publicly visible, so there is nothing for scanners to find or pound on. Wrong tokens count toward the lockout.</td>
+        </tr>
+        <tr>
+            <td>Device cookie</td>
+            <td>Remembers a device for 30 days after the token is presented. Holds a keyed hash of the token, never the token. HttpOnly, SameSite Strict, Secure on HTTPS. Rotating the token or password invalidates it everywhere.</td>
         </tr>
         <tr>
             <td>Password + bcrypt</td>
@@ -381,7 +389,7 @@ $editorSessionTimeout = 900;   // 15 minutes
 
 <h3>/edit/ gives a 404</h3>
 
-<p>Either <code>$editorEnabled</code> is false, or a token is configured and has not been presented yet — go to <code>/edit/?editor=yourtoken</code>. If neither applies, check that the <code>RewriteRule ^edit/?$ plugins/editor/index.php</code> line is present in the site's root <code>.htaccess</code> and that <code>mod_rewrite</code> is on.</p>
+<p>This is the expected response for anyone who has not presented the token on this device, so first try <code>/edit/?editor=yourtoken</code>. If that also 404s: <code>$editorEnabled</code> may be false, your IP may be in the 15 minute lockout from earlier failed attempts, or the <code>RewriteRule ^edit/?$ plugins/editor/index.php</code> line may be missing from the site's root <code>.htaccess</code> (or <code>mod_rewrite</code> is off). If <code>$editorToken</code> or <code>$editorPasswordHash</code> is empty, <code>/edit/?editor=anything</code> shows a message saying which one to set.</p>
 
 <hr/>
 
@@ -401,4 +409,4 @@ $filename = swf_page_source($pagename);
 
 <h2>Disabling the Editor</h2>
 
-<p>Set <code>$editorEnabled = false</code> in <code>config.php</code>. When false, <code>/edit/</code> returns the site's 404 page, no editor code runs on any page, and the <code>?editor</code> and <code>?preview</code> query parameters are ignored entirely.</p>
+<p>Set <code>$editorEnabled = false</code> in <code>config.php</code>. When false, <code>/edit/</code> returns the site's 404 page, no editor code runs on any page, and the <code>?editor</code> and <code>?preview</code> query parameters are ignored entirely. To sign out every remembered device without disabling the editor, change <code>$editorToken</code>.</p>

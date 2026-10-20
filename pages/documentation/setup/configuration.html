@@ -135,7 +135,7 @@ $WebsiteLanguageLocale = "en_US";
 <hr>
 <h3><code>$editorToken</code></h3>
 <p><strong>Type:</strong> <code>string</code></p>
-<p>An optional secret string. When set, <code>/edit/</code> answers with the site's 404 page until the token has been presented once in the browser session (<code>/edit/?editor=yourtoken</code>). Anyone without the token sees nothing — not even a login form. Leave it empty to make <code>/edit/</code> reachable directly. Should be a long random string. Generate one with:</p>
+<p>A required secret string. <code>/edit/</code> answers with the site's 404 page until the token has been presented once on a device (<code>/edit/?editor=yourtoken</code>), after which a 30-day cookie remembers that device. Anyone without the token sees nothing — not even a login form — so there is no public login page for bots to find. The editor refuses to run if this is empty. Should be a long random string. Generate one with:</p>
 <pre><code>php -r "echo bin2hex(random_bytes(16));"
 </code></pre>
 <pre><code class="language-php">$editorToken = 'a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e';

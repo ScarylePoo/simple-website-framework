@@ -12,7 +12,7 @@
 
     Add to config/config.php (inside the $loadplugins block):
         $editorEnabled        = true;
-        $editorToken          = 'your-random-secret-token'; // optional — hides /edit/ unless the token is presented once
+        $editorToken          = 'your-random-secret-token'; // required — /edit/ is a 404 until it has been presented once per device
         $editorPasswordHash   = password_hash('yourpassword', PASSWORD_BCRYPT);
         $editorTotpSecret     = '';   // optional two-factor; see ?totp=setup
         $editorSessionTimeout = 1800; // seconds (default 30 min)
@@ -28,7 +28,6 @@ ini_set('display_errors', 0);
 
 define('SWF_ROOT', str_replace('\\', '/', realpath(__DIR__ . '/../../')) . '/');
 define('SWF_EDITOR_URL', '/edit/');
-define('SWF_EDITOR_TOKEN_OK', 'swf_editor_token_ok');
 
 require_once SWF_ROOT . 'config/config.php';
 
@@ -63,33 +62,68 @@ function swf_editor_url($params = array()) {
 }
 
 // ── Gate 2: configuration must be complete ─────────────────────────────────
+/*
+    The token is REQUIRED. It is what keeps /edit/ from being a public login
+    form: until the token has been presented, /edit/ answers with the site's
+    404 page, so scanners looking for admin screens find nothing to catalogue
+    and nothing to hammer. Running without one is not offered.
+
+    A missing token is awkward to diagnose, because the symptom is a 404. So
+    an incomplete config shows its diagnostic only when ?editor is in the URL
+    — which is what the setup docs tell you to type — and 404s otherwise. That
+    tells the person following the instructions what is wrong without telling
+    a passer-by that an editor exists.
+*/
 $configError = '';
-if (empty($editorPasswordHash)) {
+if (empty($editorToken)) {
+    $configError = 'Set <code>$editorToken</code> in <code>config/config.php</code> before using the editor. '
+                 . 'It is required: without it <code>/edit/</code> would be a publicly visible login form. '
+                 . 'Generate one with <code>php -r "echo bin2hex(random_bytes(16));"</code>.';
+} elseif (empty($editorPasswordHash)) {
     $configError = 'Set <code>$editorPasswordHash</code> in <code>config/config.php</code> before using the editor. '
                  . 'See the documentation for how to generate one.';
 }
 
-// ── Gate 3: the URL token, if one is configured ────────────────────────────
+if ($configError !== '' && !array_key_exists('editor', $_GET)) {
+    header('Location: /404');
+    exit;
+}
+
+// ── Gate 3: the token ──────────────────────────────────────────────────────
 /*
-    With $editorToken set, /edit/ pretends not to exist until the token has
-    been presented once in this browser session (/edit/?editor=TOKEN). After
-    that the token is remembered in the session so links inside the editor
-    can stay clean. An empty $editorToken means /edit/ is reachable directly.
+    /edit/ pretends not to exist until the token has been presented once on
+    this device: /edit/?editor=TOKEN. After that a long-lived cookie remembers
+    it, so end users bookmark that URL (or just the bare /edit/ once the cookie
+    is set) and never think about it again.
+
+    The cookie does not hold the token. It holds an HMAC of the token keyed by
+    the password hash, so reading the cookie reveals nothing useful, and
+    rotating either the token or the password invalidates every device at once.
+
+    A wrong token is a failed login attempt and counts toward the same per-IP
+    lockout as a wrong password, so tokens cannot be enumerated for free. The
+    response is a 404 either way; the lockout only decides whether a correct
+    token would be accepted.
 */
-if (!empty($editorToken)) {
+if ($configError === '') {
     if (array_key_exists('editor', $_GET)) {
-        if (editor_check_url_token()) {
-            $_SESSION[SWF_EDITOR_TOKEN_OK] = true;
+        if (!editor_is_locked_out() && editor_check_url_token()) {
+            editor_set_token_cookie();
             // Drop the token from the address bar, keep everything else
             $clean = $_GET;
             unset($clean['editor']);
             swf_redirect(swf_editor_url($clean));
         }
-        // Wrong token — same response as a missing page
+        // Same rule as a wrong password: attempts while already locked out
+        // are not counted, so a locked-out user cannot extend their own lockout.
+        if (!editor_is_locked_out()) {
+            editor_record_failed_attempt();
+        }
         header('Location: /404');
         exit;
     }
-    if (empty($_SESSION[SWF_EDITOR_TOKEN_OK])) {
+
+    if (!editor_has_token_cookie()) {
         header('Location: /404');
         exit;
     }
