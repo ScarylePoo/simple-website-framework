@@ -10,6 +10,10 @@
     # RewriteCond %{HTTP_HOST} !^www\. [NC]
     # RewriteRule ^ http://www.%{HTTP_HOST}%{REQUEST_URI} [L]
 
+    # The page editor lives at /edit/ (set $editorEnabled in config/config.php to turn it on).
+    # This must come before the framework rule below so "edit" is never treated as a page.
+    RewriteRule ^edit/?$ plugins/editor/index.php [L,QSA]
+
     # These rules make the framework function. Without these 3 lines, it will not function properly.
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

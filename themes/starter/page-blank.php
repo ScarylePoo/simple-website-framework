@@ -9,7 +9,7 @@
 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
 	<main class="blanklayout">
 		<?php
-			$filename = file_get_contents("./pages/" . $pagename . ".html");
+			$filename = swf_page_source($pagename);
 			$parsed_content = parse_shortcodes($filename);
 			echo $parsed_content;
 		?>

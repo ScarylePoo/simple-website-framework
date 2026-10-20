@@ -48,8 +48,10 @@
         $yBox = true;
 		
         /* ── Page Editor ────────────────────────────────────────────────────────
-           Enables the per-page editor. Access any page with ?editor or
-           ?editor=yourtoken appended to the URL.
+           Enables the browser-based editor at yoursite.com/edit/ — a list of
+           every page and post, an edit form, and a preview through your theme.
+           Appending ?editor=yourtoken to any page still works and opens that
+           page in the editor.
 
            SETUP:
            1. Generate a password hash — create a temp PHP file containing:
@@ -57,16 +59,18 @@
               Visit it once, copy the output, delete the file.
               Paste the result into $editorPasswordHash below.
 
-           2. Set $editorToken to a long random string. This must be included
-              in the URL to even reach the login form:
-                  yoursite.com/about?editor=yourtoken
+           2. Set $editorToken to a long random string. Until it has been
+              presented once in a browser session, /edit/ answers with the
+              site's 404 page instead of a login form:
+                  yoursite.com/edit/?editor=yourtoken
               Generate one with: php -r "echo bin2hex(random_bytes(16));"
-              Leave empty ('') to disable the URL token check (not recommended).
+              Leave empty ('') to make /edit/ reachable directly (not recommended).
 
            3. Set $editorEnabled = true.
 
-           4. On production (HTTPS), session cookies are automatically flagged
-              Secure and HttpOnly. On local HTTP development this is fine as-is.
+           4. Session cookies are always HttpOnly and SameSite=Strict. They are
+              also flagged Secure when $SSL is true or the request came over
+              HTTPS, so local HTTP development works without any change here.
 
            Set $editorEnabled = false to completely disable the editor.
            When false, zero editor code runs anywhere on the site.

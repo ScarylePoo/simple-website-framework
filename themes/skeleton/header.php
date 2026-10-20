@@ -66,9 +66,9 @@
 			$outputDateFormat1 = formatDate($pagedate, 'Y-m-d H:i:s');
 			$pagedate = $outputDateFormat1;
 		} else {
-			// Get the last modified time of the file
+			// Get the last modified time of the file (an editor preview draft has no file yet, so use now)
 			$pagefilename = "pages/" . $pagename .".html";
-			$lastModifiedTime = filemtime($pagefilename);
+			$lastModifiedTime = file_exists($pagefilename) ? filemtime($pagefilename) : time();
 			$lastModifiedDate = date("Y-m-d H:i:s", $lastModifiedTime);
 			$pagedate = $lastModifiedDate;
 		}

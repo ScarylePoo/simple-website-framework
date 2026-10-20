@@ -129,13 +129,13 @@ $WebsiteLanguageLocale = "en_US";
 <h2>Editor Plugin</h2>
 <h3><code>$editorEnabled</code></h3>
 <p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>false</code></p>
-<p>Master switch for the optional browser-based page editor. When <code>false</code>, zero editor code runs anywhere on the site and the <code>?editor</code> query parameter is ignored entirely. See the <a href="documentation/setup/editor">Editor</a> page for full setup instructions.</p>
+<p>Master switch for the optional browser-based page editor at <code>/edit/</code>. When <code>false</code>, <code>/edit/</code> returns the site's 404 page, zero editor code runs anywhere on the site, and the <code>?editor</code> and <code>?preview</code> query parameters are ignored entirely. See the <a href="documentation/setup/editor">Editor</a> page for full setup instructions.</p>
 <pre><code class="language-php">$editorEnabled = false;
 </code></pre>
 <hr>
 <h3><code>$editorToken</code></h3>
 <p><strong>Type:</strong> <code>string</code></p>
-<p>A secret string that must be present in the URL for the editor to appear at all. Anyone without the token sees nothing — not even a login form. Should be a long random string. Generate one with:</p>
+<p>An optional secret string. When set, <code>/edit/</code> answers with the site's 404 page until the token has been presented once in the browser session (<code>/edit/?editor=yourtoken</code>). Anyone without the token sees nothing — not even a login form. Leave it empty to make <code>/edit/</code> reachable directly. Should be a long random string. Generate one with:</p>
 <pre><code>php -r "echo bin2hex(random_bytes(16));"
 </code></pre>
 <pre><code class="language-php">$editorToken = 'a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e';

@@ -2,8 +2,8 @@
 /*
     editor-totp-setup.php
     TOTP enrolment screen for the page editor plugin.
-    Included by editor.php only when the user is already authenticated and
-    ?totp=setup is present in the URL. Never access this file directly.
+    Included by the editor (plugins/editor/index.php) only when the user is
+    already authenticated and ?totp=setup is present in the URL. Never access this file directly.
 
     Nothing here writes to config.php. The screen generates a secret, shows it
     to you, and lets you confirm your authenticator agrees before you commit —
@@ -26,7 +26,7 @@ function editor_totp_format_secret($secret) {
 /*
     Render the enrolment panel. Returns HTML.
 */
-function editor_totp_setup_panel($editorTokenValue, $siteTitle, $siteURL) {
+function editor_totp_setup_panel($editorTokenValue, $siteTitle, $siteURL, $backURL = null) {
     global $editorTotpSecret;
 
     $out = '';
@@ -130,7 +130,8 @@ function editor_totp_setup_panel($editorTokenValue, $siteTitle, $siteURL) {
     $out .= '<p style="' . $small . 'margin:0;">Keep a copy of the key somewhere safe. If you lose your phone and have no backup, the only way back in is to edit <code>config/config.php</code> over FTP or SSH and blank the value.</p>';
     $out .= '</div>';
 
-    $backURL = '?editor=' . urlencode($editorTokenValue);
+    // The standalone editor passes its own URL; the legacy in-page editor passed a token.
+    if ($backURL === null) { $backURL = '?editor=' . urlencode($editorTokenValue); }
     $out .= '<div style="display:flex;gap:10px;align-items:center;">';
     $out .= '<a href="' . htmlspecialchars($backURL) . '" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:4px;color:#333;text-decoration:none;font-size:0.9rem;">Back to the editor</a>';
     $out .= '<form method="POST" style="margin:0;">';
