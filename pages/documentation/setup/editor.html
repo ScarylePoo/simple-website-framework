@@ -255,7 +255,9 @@ https://yoursite.com/edit/?page=posts/my-post
 
 <h3>Editing</h3>
 
-<p>The edit screen shows the page's metadata — title, layout, type, date, author, image, excerpt and keywords — above the content. Posts also get a <strong>Categories</strong> field, and archive pages get an <strong>Archive filter</strong> field; these map onto the <code>pagecategory</code> and <code>postcategory</code> tags described in <a href="documentation/developers/postsandcategories">Posts and Categories</a>.</p>
+<p>The edit screen shows the page's metadata — title, layout, type, date, author, image, excerpt and keywords — above the content.</p>
+
+<p>Posts also get a <strong>Categories</strong> picker: one chip for every category the site knows about, which is every <code>postcategory</code> an archive page filters on plus every <code>pagecategory</code> already used by a post. Tick any that apply, or type a new one and press Add. Ticking nothing leaves the post uncategorized. A ticked category that no archive page lists yet is marked, with a <strong>create one</strong> link that opens a new archive page already set up to filter on it — so a brand new category is two clicks away from having its own landing page. Archive pages get an <strong>Archive filter</strong> dropdown of the same categories, with <em>(all posts)</em> and <em>uncategorized</em> as fixed choices. Both write the plain <code>pagecategory</code> and <code>postcategory</code> tags described in <a href="documentation/developers/postsandcategories">Posts and Categories</a>; nothing about the file format changes.</p>
 
 <p>The <strong>Layout</strong> list is built from the templates in your active theme, so any <code>page-*.php</code> file a theme adds shows up automatically. Pages that use the <code>page-md</code> layouts are edited as plain Markdown source; everything else gets a rich text editor, with a <code>&lt;/&gt;</code> button for raw HTML.</p>
 

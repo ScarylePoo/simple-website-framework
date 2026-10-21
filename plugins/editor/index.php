@@ -261,6 +261,7 @@ function swf_list_pages() {
             'date'   => $info['meta']['pagedate'],
             'layout' => $info['meta']['pagelayout'],
             'cats'   => $info['meta']['pagecategory'],
+            'filter' => $info['meta']['postcategory'],
             'ts'     => $info['meta']['pagedate'] !== '' ? (strtotime($info['meta']['pagedate']) ?: $info['mtime']) : $info['mtime'],
         );
         if (strpos($name, 'posts/') === 0) { $posts[] = $entry; } else { $pages[] = $entry; }
@@ -268,6 +269,49 @@ function swf_list_pages() {
     usort($pages, function ($a, $b) { return strcmp($a['name'], $b['name']); });
     usort($posts, function ($a, $b) { return $b['ts'] <=> $a['ts']; });
     return array('pages' => $pages, 'posts' => $posts);
+}
+
+/*
+    Every category the site knows about, keyed by its normalised name
+    (lowercase, trimmed — the same rule the archive templates apply):
+
+        'tutorials' => array('archive' => 'tutorials', 'posts' => 3)
+
+    'archive' is the name of the archive page whose postcategory tag filters
+    on it, or null if no such page exists yet. 'posts' is how many posts carry
+    the tag. A category comes from either source — an archive page nobody has
+    posted to yet still shows up, and so does a tag on a post that has no
+    archive page (flagged in the UI so it can be created).
+*/
+function swf_categories($lists) {
+    $cats = array();
+    foreach ($lists['pages'] as $p) {
+        if (strpos($p['layout'], 'postarchives') !== 0) { continue; }
+        $slug = strtolower(trim($p['filter']));
+        if ($slug === '') { continue; }
+        if (!isset($cats[$slug])) { $cats[$slug] = array('archive' => null, 'posts' => 0); }
+        if ($cats[$slug]['archive'] === null) { $cats[$slug]['archive'] = $p['name']; }
+    }
+    foreach ($lists['posts'] as $p) {
+        foreach (explode(',', $p['cats']) as $c) {
+            $slug = strtolower(trim($c));
+            if ($slug === '') { continue; }
+            if (!isset($cats[$slug])) { $cats[$slug] = array('archive' => null, 'posts' => 0); }
+            $cats[$slug]['posts']++;
+        }
+    }
+    ksort($cats);
+    return $cats;
+}
+
+// Normalise a comma separated category string into a unique, ordered list of slugs
+function swf_split_categories($value) {
+    $out = array();
+    foreach (explode(',', (string) $value) as $c) {
+        $slug = strtolower(trim($c));
+        if ($slug !== '' && !in_array($slug, $out, true)) { $out[] = $slug; }
+    }
+    return $out;
 }
 
 // ── Which view are we showing? ─────────────────────────────────────────────
@@ -302,12 +346,38 @@ if ($view === 'form') {
         $page['meta']['pagetype']   = $newKind === 'post' ? 'article' : 'website';
         $page['meta']['pagedate']   = date('n/j/Y');
         $page['meta']['pageauthor'] = $siteAuthor;
+
+        /*
+            "Create archive page for X" from the category picker lands here as
+            ?new=page&archive=X. Pre-fill a styled archive filtered on X so the
+            whole job is one click and a Create button.
+        */
+        $newArchiveFor = '';
+        if (isset($_GET['archive'])) {
+            $slug = strtolower(trim($_GET['archive']));
+            if ($slug !== '' && preg_match('/^[a-z0-9][a-z0-9 \-]*$/', $slug)) {
+                $newArchiveFor = $slug;
+                $page['meta']['postcategory'] = $slug;
+                $page['meta']['pagetitle']    = ucwords($slug);
+                $page['meta']['pageexcerpt']  = 'All posts in ' . $slug . '.';
+                $archiveLayouts = swf_layout_options($themeName);
+                $page['meta']['pagelayout']   = isset($archiveLayouts['postarchives-styled']) ? 'postarchives-styled' : 'postarchives';
+            }
+        }
     } else {
         $page = swf_read_page($editName);
         if ($page['meta']['pageauthor'] === '') { $page['meta']['pageauthor'] = $siteAuthor; }
     }
     $isPost = $isNew ? ($newKind === 'post') : (strpos($editName, 'posts/') === 0);
     $layoutOptions = swf_layout_options($themeName, $page['meta']['pagelayout']);
+    $categories    = swf_categories(swf_list_pages());
+    $pageCats      = swf_split_categories($page['meta']['pagecategory']);
+    // A category on this post that nothing else knows about still needs a chip
+    foreach ($pageCats as $slug) {
+        if (!isset($categories[$slug])) { $categories[$slug] = array('archive' => null, 'posts' => 0); }
+    }
+    ksort($categories);
+    $archiveNewName = $isNew ? '' : $editName;
 }
 
 ?><!DOCTYPE html>
@@ -385,10 +455,24 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .editor-grid.previewing { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 16px; }
 .meta .full { grid-column: span 2; }
-.meta label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+.meta > div > label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
 .meta label small { color: #999; }
 .meta input, .meta select { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 0.92rem; background: var(--panel); }
 .meta .hidden { display: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 0.88rem; cursor: pointer; user-select: none; margin: 0; }
+.chip:has(input:checked) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; border: 1px solid currentColor; flex: none; }
+.chip:has(input:checked)::before { background: currentColor; }
+.chip .n { opacity: .6; font-size: 0.8em; }
+.chip.orphan { border-style: dashed; }
+.chips .add { display: inline-flex; gap: 6px; }
+.chips .add input { width: 160px; padding: 5px 10px; border-radius: 999px; }
+.chips .add button { padding: 4px 12px; border-radius: 999px; }
+.cat-note { font-size: 0.82rem; color: var(--muted); margin-top: 8px; }
+.cat-note a { color: var(--ink); }
+.cat-note:empty { display: none; }
 .content-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
 .content-wrap textarea { width: 100%; min-height: 420px; padding: 10px; border: 1px solid var(--line); border-radius: 4px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
 .content-wrap .mode { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; }
@@ -525,7 +609,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                     <?php if ($isNew): ?>
                     <div class="full">
                         <label>Address <small>(lowercase letters, numbers and hyphens; use / for folders)</small></label>
-                        <input type="text" id="f-pagename" placeholder="<?php echo $isPost ? 'posts/my-first-post' : 'about-us  or  docs/getting-started'; ?>" value="<?php echo $isPost ? 'posts/' : ''; ?>" autofocus>
+                        <input type="text" id="f-pagename" placeholder="<?php echo $isPost ? 'posts/my-first-post' : 'about-us  or  docs/getting-started'; ?>" value="<?php echo $isPost ? 'posts/' : ($newArchiveFor !== '' ? swf_e(preg_replace('/[^a-z0-9]+/', '-', $newArchiveFor)) : ''); ?>" autofocus>
                     </div>
                     <?php endif; ?>
                     <div class="full">
@@ -569,12 +653,39 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                         <input type="text" id="f-pagekeywords" value="<?php echo swf_e($m['pagekeywords']); ?>">
                     </div>
                     <div class="full<?php echo $isPost ? '' : ' hidden'; ?>" id="row-pagecategory">
-                        <label>Categories <small>(comma separated; leave blank for uncategorized)</small></label>
-                        <input type="text" id="f-pagecategory" value="<?php echo swf_e($m['pagecategory']); ?>">
+                        <label>Categories <small>(tick any that apply; none means uncategorized)</small></label>
+                        <div class="chips" id="cat-chips">
+                            <?php foreach ($categories as $slug => $c): if ($slug === 'uncategorized') { continue; } // "no category" is the absence of chips, not a chip ?>
+                            <label class="chip<?php echo $c['archive'] === null ? ' orphan' : ''; ?>" data-archive="<?php echo swf_e($c['archive'] ?? ''); ?>">
+                                <input type="checkbox" value="<?php echo swf_e($slug); ?>"<?php echo in_array($slug, $pageCats, true) ? ' checked' : ''; ?> onchange="swfCatsChanged()">
+                                <?php echo swf_e($slug); ?>
+                                <span class="n" title="<?php echo (int) $c['posts']; ?> post(s) in this category"><?php echo (int) $c['posts']; ?></span>
+                            </label>
+                            <?php endforeach; ?>
+                            <span class="add">
+                                <input type="text" id="cat-new" placeholder="new category" onkeydown="if(event.key==='Enter'){event.preventDefault();swfCatAdd();}">
+                                <button class="btn small secondary" type="button" onclick="swfCatAdd()">Add</button>
+                            </span>
+                        </div>
+                        <div class="cat-note" id="cat-note"></div>
+                        <input type="hidden" id="f-pagecategory" value="<?php echo swf_e(implode(', ', $pageCats)); ?>">
                     </div>
                     <div class="full<?php echo strpos($m['pagelayout'], 'postarchives') === 0 ? '' : ' hidden'; ?>" id="row-postcategory">
-                        <label>Archive filter <small>(only list posts in this category; blank lists everything)</small></label>
-                        <input type="text" id="f-postcategory" value="<?php echo swf_e($m['postcategory']); ?>">
+                        <label>Archive filter <small>(which posts this archive page lists)</small></label>
+                        <?php
+                            $filterNow = strtolower(trim($m['postcategory']));
+                            $filterKnown = $filterNow === '' || $filterNow === 'uncategorized' || isset($categories[$filterNow]);
+                        ?>
+                        <select id="f-postcategory-select" onchange="swfFilterChanged()">
+                            <option value=""<?php echo $filterNow === '' ? ' selected' : ''; ?>>(all posts)</option>
+                            <option value="uncategorized"<?php echo $filterNow === 'uncategorized' ? ' selected' : ''; ?>>uncategorized — posts with no category</option>
+                            <?php foreach ($categories as $slug => $c): if ($slug === 'uncategorized') { continue; } ?>
+                            <option value="<?php echo swf_e($slug); ?>"<?php echo $filterNow === $slug ? ' selected' : ''; ?>><?php echo swf_e($slug); ?> (<?php echo (int) $c['posts']; ?> post<?php echo $c['posts'] === 1 ? '' : 's'; ?>)</option>
+                            <?php endforeach; ?>
+                            <option value="__other"<?php echo $filterKnown ? '' : ' selected'; ?>>Other…</option>
+                        </select>
+                        <input type="text" id="f-postcategory-other" placeholder="category name" value="<?php echo $filterKnown ? '' : swf_e($m['postcategory']); ?>" style="margin-top:8px;<?php echo $filterKnown ? 'display:none;' : ''; ?>" oninput="swfFilterChanged()">
+                        <input type="hidden" id="f-postcategory" value="<?php echo swf_e($m['postcategory']); ?>">
                     </div>
                 </div>
 
@@ -689,6 +800,60 @@ function swfLayoutChanged() {
     document.getElementById('row-postcategory').classList.toggle('hidden', !isArchive);
 }
 
+/*
+    Category picker. The chips are the source of truth; the hidden
+    #f-pagecategory is rebuilt from them whenever anything changes so the
+    save/preview code keeps sending one comma separated string, exactly as
+    it would from a text box.
+*/
+var SWF_NEW_ARCHIVE_URL = SWF_EDITOR + '?new=page&archive=';
+
+function swfCatsChanged() {
+    var checked = [], orphans = [];
+    document.querySelectorAll('#cat-chips .chip').forEach(function (chip) {
+        var cb = chip.querySelector('input');
+        if (!cb.checked) { return; }
+        checked.push(cb.value);
+        if (chip.getAttribute('data-archive') === '') { orphans.push(cb.value); }
+    });
+    document.getElementById('f-pagecategory').value = checked.join(', ');
+    var note = document.getElementById('cat-note');
+    if (orphans.length === 0) { note.innerHTML = ''; return; }
+    note.innerHTML = orphans.map(function (slug) {
+        return 'No archive page lists <strong>' + swfEsc(slug) + '</strong> yet — '
+             + '<a href="' + SWF_NEW_ARCHIVE_URL + encodeURIComponent(slug) + '" target="_blank" rel="noopener">create one</a>.';
+    }).join('<br>');
+}
+
+function swfCatAdd() {
+    var input = document.getElementById('cat-new');
+    var slug = input.value.toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!slug) { return; }
+    var existing = null;
+    document.querySelectorAll('#cat-chips .chip input').forEach(function (cb) { if (cb.value === slug) { existing = cb; } });
+    if (existing) { existing.checked = true; }
+    else {
+        var chip = document.createElement('label');
+        chip.className = 'chip orphan'; chip.setAttribute('data-archive', '');
+        chip.innerHTML = '<input type="checkbox" checked onchange="swfCatsChanged()"> <span class="n">0</span>';
+        chip.querySelector('input').value = slug;
+        chip.insertBefore(document.createTextNode(slug + ' '), chip.querySelector('.n'));
+        document.getElementById('cat-chips').insertBefore(chip, document.querySelector('#cat-chips .add'));
+    }
+    input.value = '';
+    swfCatsChanged();
+}
+
+function swfFilterChanged() {
+    var sel = document.getElementById('f-postcategory-select');
+    var other = document.getElementById('f-postcategory-other');
+    var isOther = sel.value === '__other';
+    other.style.display = isOther ? '' : 'none';
+    document.getElementById('f-postcategory').value = isOther ? other.value.trim() : sel.value;
+}
+
+function swfEsc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
 function swfFields() {
     var f = {
         csrf_token:   SWF_CSRF,
@@ -767,6 +932,8 @@ window.addEventListener('beforeunload', function (e) {
 
 jQuery(function () {
     swfSetMode(swfIsMarkdownLayout() ? 'plain' : 'rich');
+    swfCatsChanged();
+    swfFilterChanged();
     swfSavedSnapshot = JSON.stringify(swfFields());
 });
 <?php endif; ?>
