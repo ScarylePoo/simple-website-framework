@@ -1,9 +1,9 @@
 <!-- pagetitle: Shortcodes -->
 <!-- pagelayout: page-html -->
-<!-- pagedate: 4/20/2026 -->
+<!-- pagedate: 10/20/2026 -->
 <!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
 <!-- pageexcerpt: The built-in shortcode system lets you embed dynamic content inside any page file. -->
-<!-- pagekeywords: shortcodes, rss, php, pre, dynamic content, shortcode-parser -->
+<!-- pagekeywords: shortcodes, rss, php, pre, video, dynamic content, shortcode-parser -->
 <!-- pageauthor: Scary le Poo -->
 <!-- pagetype: article -->
 
@@ -22,6 +22,12 @@ content goes here
 <pre>&#91;shortcode_name attribute="value"&#93;
 content goes here
 &#91;/shortcode_name&#93;</pre>
+<p><strong>Attribute rules:</strong></p>
+<ul>
+    <li>Values go in double or single quotes. Each style may contain the other, so <code>caption="Scary's trailer"</code> works.</li>
+    <li>A bare word with no value is a flag and is read as <code>="true"</code>: <code>&#91;video src="v.mp4" loop&#93;</code> is the same as <code>loop="true"</code>.</li>
+    <li>Shortcodes that accept booleans take <code>true</code>/<code>false</code>, <code>yes</code>/<code>no</code>, <code>on</code>/<code>off</code> or <code>1</code>/<code>0</code>.</li>
+</ul>
 <hr/>
 <h2>Built-in Shortcodes</h2>
 <h3><code>&#91;rss&#93;</code> — Embed an RSS Feed</h3>
@@ -83,10 +89,149 @@ echo "The current year is: " . date('Y');
     <li>Syntax errors in the evaluated code will cause a fatal error on that page.</li>
 </ul>
 <hr/>
+<h3><code>&#91;video&#93;</code> — Play a Video Hosted on Your Site</h3>
+<p>Embeds a video file that lives on your own server in a responsive frame that holds its shape before the file loads, so the page doesn't jump. Output is a plain HTML5 <code>&lt;video&gt;</code> element — no player library, no third-party embed, no tracking. Layout comes from the <em>Video</em> block in <code>css/base.css</code>, so it works in every theme, and themes can restyle the <code>.swf-video</code> classes.</p>
+<p>This is for files you host. For YouTube or Vimeo, paste their embed code into the page directly.</p>
+<p><strong>Simplest use:</strong></p>
+<pre>&#91;video src="videos/trailer.mp4"&#93;</pre>
+<p>The path can also go between the tags, like <code>&#91;rss&#93;</code>:</p>
+<pre>&#91;video&#93;videos/trailer.mp4&#91;/video&#93;</pre>
+<p><strong>Everything at once:</strong></p>
+<pre>&#91;video src="videos/trailer.webm, videos/trailer.mp4"
+       poster="images/trailer.jpg"
+       ratio="16:9"
+       width="900"
+       caption="Launch trailer"
+       captions="videos/trailer.en.vtt"
+       start="12"
+       loop muted&#93;</pre>
+<p><strong>Attributes:</strong></p>
+<table>
+    <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>src</code></td>
+            <td>—</td>
+            <td>Path or URL of the video file. Required (or put it between the tags). Comma-separate several encodings, best first, and the browser plays the first one it supports: <code>src="trailer.webm, trailer.mp4"</code>. Recognised types: mp4, m4v, webm, ogv, ogg, mov.</td>
+        </tr>
+        <tr>
+            <td><code>poster</code></td>
+            <td>none</td>
+            <td>Image shown in the frame before playback starts.</td>
+        </tr>
+        <tr>
+            <td><code>ratio</code></td>
+            <td><code>16:9</code></td>
+            <td>Shape of the frame: <code>16:9</code>, <code>4:3</code>, <code>21:9</code>, <code>9:16</code>, or any <em>width:height</em>. <code>auto</code> sizes the frame to the file itself once it loads.</td>
+        </tr>
+        <tr>
+            <td><code>fit</code></td>
+            <td><code>contain</code></td>
+            <td><code>contain</code> letterboxes a video whose shape doesn't match the frame; <code>cover</code> fills the frame and crops the edges.</td>
+        </tr>
+        <tr>
+            <td><code>width</code></td>
+            <td>full width</td>
+            <td>Maximum width: <code>640</code> (pixels), <code>60%</code>, <code>40rem</code>. The frame is centred when it is narrower than the content column, and never wider than it.</td>
+        </tr>
+        <tr>
+            <td><code>caption</code></td>
+            <td>none</td>
+            <td>Text shown under the video in a <code>&lt;figcaption&gt;</code>.</td>
+        </tr>
+        <tr>
+            <td><code>title</code></td>
+            <td>the caption</td>
+            <td>Accessible name for screen readers, if you want it to differ from the caption.</td>
+        </tr>
+        <tr>
+            <td><code>captions</code></td>
+            <td>none</td>
+            <td>Path to a WebVTT subtitle file (<code>.vtt</code>). Shown by default; viewers can switch it off in the player.</td>
+        </tr>
+        <tr>
+            <td><code>captionslang</code>, <code>captionslabel</code></td>
+            <td><code>en</code>, <code>English</code></td>
+            <td>Language code and menu label for the subtitle track.</td>
+        </tr>
+        <tr>
+            <td><code>start</code></td>
+            <td><code>0</code></td>
+            <td>Start position in seconds. Uses a media fragment (<code>#t=12</code>) on the source URL, so it needs no JavaScript.</td>
+        </tr>
+        <tr>
+            <td><code>controls</code></td>
+            <td><code>true</code></td>
+            <td>Show the browser's play/pause/volume controls.</td>
+        </tr>
+        <tr>
+            <td><code>autoplay</code></td>
+            <td><code>false</code></td>
+            <td>Start playing as soon as it can. Forces <code>muted</code>, because browsers block autoplay with sound. Visitors who have asked their system for reduced motion get the video paused with controls instead.</td>
+        </tr>
+        <tr>
+            <td><code>loop</code></td>
+            <td><code>false</code></td>
+            <td>Start again when it reaches the end.</td>
+        </tr>
+        <tr>
+            <td><code>muted</code></td>
+            <td><code>false</code></td>
+            <td>Start with the sound off.</td>
+        </tr>
+        <tr>
+            <td><code>preload</code></td>
+            <td><code>metadata</code></td>
+            <td>How much to fetch before the visitor presses play: <code>none</code>, <code>metadata</code> (duration and first frame) or <code>auto</code> (the whole file). Autoplay defaults to <code>auto</code>.</td>
+        </tr>
+        <tr>
+            <td><code>nodownload</code></td>
+            <td><code>false</code></td>
+            <td>Hide the download button from the browser's controls. A deterrent only — the file is still a plain URL.</td>
+        </tr>
+        <tr>
+            <td><code>class</code>, <code>id</code></td>
+            <td>none</td>
+            <td>Added to the outer <code>&lt;figure&gt;</code> so a theme or page can style one video differently.</td>
+        </tr>
+    </tbody>
+</table>
+<p><strong>Common recipes:</strong></p>
+<p>A silent looping background clip, like a GIF but much smaller:</p>
+<pre>&#91;video src="videos/hero.mp4" autoplay loop controls="false" fit="cover" ratio="21:9"&#93;</pre>
+<p>A phone-shaped vertical clip, centred:</p>
+<pre>&#91;video src="videos/demo.mp4" ratio="9:16" width="360" caption="Recorded on a phone"&#93;</pre>
+<p>Two encodings with subtitles:</p>
+<pre>&#91;video src="videos/talk.webm, videos/talk.mp4" captions="videos/talk.en.vtt" poster="images/talk.jpg"&#93;</pre>
+<p><strong>Output structure:</strong></p>
+<pre>&lt;figure class="swf-video"&gt;
+  &lt;div class="swf-video-frame"&gt;
+    &lt;video controls preload="metadata" playsinline&gt;
+      &lt;source src="videos/trailer.mp4" type="video/mp4"&gt;
+      &lt;p&gt;Your browser can't play this video. &lt;a href="videos/trailer.mp4"&gt;Download it instead&lt;/a&gt;.&lt;/p&gt;
+    &lt;/video&gt;
+  &lt;/div&gt;
+  &lt;figcaption&gt;…&lt;/figcaption&gt;
+&lt;/figure&gt;</pre>
+<p>The frame's shape is set with the <code>--swf-video-ratio</code> custom property and its maximum width with <code>--swf-video-width</code>. <code>width</code> adds <code>swf-video-sized</code>, <code>ratio="auto"</code> adds <code>swf-video-auto</code>, and <code>fit="cover"</code> adds <code>swf-video-cover</code> to the figure. A theme that wants a different default shape for every video can set <code>--swf-video-ratio</code> on <code>.swf-video-frame</code> in its own stylesheet.</p>
+<p><strong>Notes:</strong></p>
+<ul>
+    <li>Paths are relative to the site root, the same as image paths in page metadata. A <code>videos/</code> folder next to <code>pages/</code> is a sensible home.</li>
+    <li>The output is written as a single line so the Markdown parser treats it as one HTML block; it works in <code>page-md</code> layouts as well as <code>page-html</code>.</li>
+    <li>If <code>src</code> is missing, a visible <code>Video error: no src given.</code> message is printed in its place rather than failing silently.</li>
+    <li>Several videos on one page are fine; the small reduced-motion script for autoplay is printed once at most.</li>
+</ul>
+<hr/>
 <h2>Adding a New Shortcode</h2>
 <p>New shortcodes are easy to add. All files in <code>required/shortcode-functions/</code> are auto-loaded, so you just need to:</p>
 <p><strong>1. Create a new file</strong> in <code>required/shortcode-functions/</code>, e.g. <code>my-shortcode.php</code>.</p>
-<p><strong>2. Define your function</strong> inside it. The function receives two arguments: an associative array of attributes, and a string of inner content (empty string if the shortcode is self-closing):</p>
+<p><strong>2. Define your function</strong> inside it. The function receives two arguments: an associative array of attributes (a bare flag like <code>loop</code> arrives as <code>'loop' =&gt; 'true'</code>), and a string of inner content (empty string if the shortcode is self-closing):</p>
 <pre><code class="language-php">&lt;?php
 function shortcode_myshortcode($attributes, $content) {
     $color = isset($attributes['color']) ? $attributes['color'] : 'blue';
@@ -99,6 +244,7 @@ function shortcode_myshortcode($attributes, $content) {
     'rss' =&gt; 'shortcode_rss_feed',
     'pre' =&gt; 'shortcode_pre',
     'php' =&gt; 'shortcode_php',
+    'video' =&gt; 'shortcode_video',
     'myshortcode' =&gt; 'shortcode_myshortcode', // add this line
 ];
 </code></pre>
