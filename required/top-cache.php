@@ -1,8 +1,9 @@
 <?php
 // Params that must NEVER be served from or written to cache — always live.
-// (editor= and meta= gate the page editor / meta-info overlay, which must
-// reflect real-time state, not a stale disk snapshot.)
-$noCacheParams = array('meta', 'editor');
+// (editor= and meta= gate the page editor / meta-info overlay, and preview=
+// renders an unsaved editor draft; all three must reflect real-time state,
+// not a stale disk snapshot, and a draft must never be written to disk.)
+$noCacheParams = array('meta', 'editor', 'preview');
 
 $url = $_SERVER["REQUEST_URI"];
 $urlParts = parse_url($url);

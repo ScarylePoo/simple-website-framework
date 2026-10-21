@@ -31,7 +31,7 @@
 <hr/>
 <h2>Cache File Naming</h2>
 <p>Cache files are named based on the URL path of the request. The file is stored in the site root directory as <code>cached-[pagename].html</code>. For example, a request to <code>/about</code> produces <code>cached-about.html</code>.</p>
-<p>Query parameters (other than <code>?meta</code> and <code>?page</code>) are stripped before the cache filename is determined, so parameterised requests don't create duplicate cache entries.</p>
+<p>Query parameters (other than <code>?page</code>) are stripped before the cache filename is determined, so parameterised requests don't create duplicate cache entries. Three parameters bypass the cache entirely — the request is neither served from nor written to it: <code>?meta</code> (the debug overlay), <code>?editor</code> (the old editor shortcut) and <code>?preview</code> (an editor preview draft, which must never be written to disk).</p>
 <hr/>
 <h2>Cache Duration</h2>
 <p>The default cache lifetime is <strong>5 hours</strong> (18,000 seconds). To change this, edit the <code>$cachetime</code> variable in <code>required/top-cache.php</code>:</p>
@@ -49,6 +49,6 @@
 <h2>What the Cache Does Not Cover</h2>
 <ul>
     <li>The <strong>RSS feed</strong> (<code>?rss</code>) bypasses the cache entirely — it is generated fresh on every request</li>
-    <li>The <strong><code>?meta=yes</code> debug overlay</strong> is preserved across cached requests because <code>?meta</code> is in the list of query parameters that are kept when determining the cache filename</li>
+    <li>The <strong><code>?meta=yes</code> debug overlay</strong> always reflects live state, because <code>?meta</code> requests skip the cache altogether</li>
     <li><strong>Paginated archive pages</strong> (<code>?page=2</code> etc.) are also preserved for the same reason</li>
 </ul>

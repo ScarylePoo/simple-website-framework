@@ -1,13 +1,15 @@
 <!-- pagetitle: Page Editor Plugin -->
 <!-- pagelayout: page-html -->
-<!-- pagedate: 4/20/2026 -->
+<!-- pagedate: 10/20/2026 -->
 <!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
-<!-- pageexcerpt: How to install, configure and use the optional per-page editor plugin. -->
-<!-- pagekeywords: editor, plugin, summernote, password, token, security, totp, two-factor, 2fa, authenticator -->
+<!-- pageexcerpt: How to install, configure and use the optional browser-based editor at /edit/ — pages, posts, previews and two-factor. -->
+<!-- pagekeywords: editor, plugin, summernote, preview, posts, password, token, security, totp, two-factor, 2fa, authenticator -->
 <!-- pageauthor: Scary le Poo -->
 <!-- pagetype: article -->
 
-<p>The page editor is an optional plugin that adds a password-protected editor to the bottom of any page when <code>?editor=yourtoken</code> is appended to the URL. It lets you edit page content and metadata, and create new pages, directly in the browser — with no database and no permanently exposed admin panel.</p>
+<p>The page editor is an optional, password-protected screen at <code>yoursite.com/edit/</code>. From it you can see every page and post on the site, open one to change its content and metadata, create new pages and posts, and preview a draft through your live theme before anything is saved — all in the browser, with no database.</p>
+
+<p>Nothing from the editor is ever mixed into your public pages. It has its own screen, its own styling, and it only ever reads and writes files inside <code>pages/</code>.</p>
 
 <p>An optional second factor is also available: a six-digit code from an authenticator app, on top of the password. It is off by default and requires no third-party service.</p>
 
@@ -17,7 +19,7 @@
 
 <h2>Installation</h2>
 
-<p>The editor plugin ships as six PHP files and an <code>.htaccess</code> file, all inside <code>plugins/editor/</code>. They are included in the framework repository. No additional setup is needed beyond configuration.</p>
+<p>The editor plugin ships as a set of PHP files and an <code>.htaccess</code> file inside <code>plugins/editor/</code>, plus one rewrite rule in the site's root <code>.htaccess</code> that maps <code>/edit/</code> onto it. They are included in the framework repository. No additional setup is needed beyond configuration.</p>
 
 <table>
     <thead>
@@ -28,8 +30,16 @@
     </thead>
     <tbody>
         <tr>
+            <td><code>index.php</code></td>
+            <td>The editor itself — login, the page and post lists, the edit form and the preview pane. This is what <code>/edit/</code> serves.</td>
+        </tr>
+        <tr>
             <td><code>editor.php</code></td>
-            <td>The editor interface and login form.</td>
+            <td>Kept for the old way in: appending <code>?editor=yourtoken</code> to a page now simply sends you to <code>/edit/</code> with that page open.</td>
+        </tr>
+        <tr>
+            <td><code>editor-preview.php</code></td>
+            <td>Lets a draft held by your editor session render through the theme when a page is loaded with <code>?preview</code>.</td>
         </tr>
         <tr>
             <td><code>editor-auth.php</code></td>
@@ -37,7 +47,7 @@
         </tr>
         <tr>
             <td><code>editor-save.php</code></td>
-            <td>The endpoint that writes pages to disk.</td>
+            <td>The endpoint that writes pages to disk and stages preview drafts.</td>
         </tr>
         <tr>
             <td><code>editor-totp.php</code></td>
@@ -108,7 +118,11 @@ $2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
 
 <h2>Setting the URL Token</h2>
 
-<p>The <code>$editorToken</code> is a secret string that must be present in the URL for the editor to appear at all. Anyone who doesn't know the token will see nothing — not even a login form. This keeps the editor's existence hidden from casual probing.</p>
+<p>The <code>$editorToken</code> is a secret string, and it is required. Until the token has been presented on a device, <code>/edit/</code> returns the site's ordinary 404 page — not a login form, not an error, nothing that distinguishes it from any other address that does not exist. Bots that scan for admin screens find nothing to catalogue and nothing to hammer. That is the whole point of the token, and it is why the editor refuses to run without one.</p>
+
+<p>You present it once per device by visiting <code>/edit/?editor=yourtoken</code> (or the old <code>anypage?editor=yourtoken</code>). The editor then sets a cookie that remembers the device for 30 days, and plain <code>/edit/</code> works from then on. The cookie does not contain the token — it holds a keyed hash of it — and changing either the token or the password invalidates every remembered device at once.</p>
+
+<p>A wrong token counts as a failed login attempt against the same per-IP lockout as a wrong password, so the token cannot be guessed at for free. The response is a 404 either way.</p>
 
 <p>Choose something long and random. The easiest way is to generate one at the command line:</p>
 
@@ -145,7 +159,7 @@ $editorToken = 'a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e';
 <p><strong>Step 2.</strong> Click <strong>Two-factor: off</strong> in the editor toolbar, or go directly to:</p>
 
 <pre>
-https://yoursite.com/about?editor=yourtoken&amp;totp=setup
+https://yoursite.com/edit/?totp=setup
 </pre>
 
 <p>The enrolment screen is only reachable once you are already logged in, so your password remains the gate even before a second factor exists.</p>
@@ -212,31 +226,48 @@ $editorTotpSecret   = '';
 
 <h2>Accessing the Editor</h2>
 
-<p>Once configured, append <code>?editor=yourtoken</code> to any page URL:</p>
+<p>Once configured, go to <code>/edit/</code>, presenting your token the first time if you set one:</p>
+
+<pre>
+https://yoursite.com/edit/?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
+</pre>
+
+<p>Two shortcuts also work, and are handy when you are looking at a page and spot something to fix:</p>
 
 <pre>
 https://yoursite.com/about?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
-https://yoursite.com/posts/my-post?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
-https://yoursite.com/documentation/introduction?editor=a3f8c2d1e4b7906f2a1d3c5e7b9f0d2e
+https://yoursite.com/edit/?page=posts/my-post
 </pre>
 
-<p>If the token matches, a password prompt appears at the bottom of the page — with a second field for your authenticator code if two-factor is enabled. Enter your credentials to unlock the editor. The session lasts for the duration set in <code>$editorSessionTimeout</code> (default 30 minutes) and expires automatically on inactivity.</p>
+<p>Both open the editor with that page already loaded. The first is the address the editor has always used, so old bookmarks keep working.</p>
 
-<p>If the token does not match, the page renders normally with no indication that an editor exists.</p>
+<p><strong>For end users:</strong> bookmark <code>https://yoursite.com/edit/?editor=yourtoken</code>. The first visit on any device remembers it for 30 days; after that, plain <code>/edit/</code> works too. Nobody has to edit a URL by hand.</p>
+
+<p>You will see a password prompt — with a second field for your authenticator code if two-factor is enabled. The session lasts for the duration set in <code>$editorSessionTimeout</code> (default 30 minutes) and expires automatically on inactivity.</p>
+
+<p>If the token is missing on a device that has not been remembered, or wrong, you get the site's normal 404 page with no indication that an editor exists.</p>
 
 <hr/>
 
 <h2>Using the Editor</h2>
 
-<p>Once authenticated, the editor appears below the page content with two tabs:</p>
+<p>Once you are logged in the editor shows two lists side by side: <strong>Pages</strong> (everything in <code>pages/</code>) and <strong>Posts</strong> (everything in <code>pages/posts/</code>, newest first). Each has a filter box and a button to create a new one. Click any entry to open it.</p>
 
-<h3>Edit this page</h3>
+<h3>Editing</h3>
 
-<p>Shows the current page's metadata fields pre-populated — title, layout, type, date, author, image, excerpt, and keywords — along with a Summernote rich text editor loaded with the page's current content. Make your changes and click <strong>Save page</strong>. The file is written to disk immediately and the cache for that page is busted automatically.</p>
+<p>The edit screen shows the page's metadata — title, layout, type, date, author, image, excerpt and keywords — above the content. Posts also get a <strong>Categories</strong> field, and archive pages get an <strong>Archive filter</strong> field; these map onto the <code>pagecategory</code> and <code>postcategory</code> tags described in <a href="documentation/developers/postsandcategories">Posts and Categories</a>.</p>
 
-<h3>New page</h3>
+<p>The <strong>Layout</strong> list is built from the templates in your active theme, so any <code>page-*.php</code> file a theme adds shows up automatically. Pages that use the <code>page-md</code> layouts are edited as plain Markdown source; everything else gets a rich text editor, with a <code>&lt;/&gt;</code> button for raw HTML.</p>
 
-<p>Provides the same metadata fields as a blank form, plus a content editor. The <strong>Page name / path</strong> field determines where the file will be created inside <code>pages/</code>:</p>
+<p>Click <strong>Save</strong> to write the file. The cache for that page is cleared straight away, and saving a post also clears the archive pages so the new content lists immediately.</p>
+
+<h3>Preview</h3>
+
+<p><strong>Preview</strong> renders the draft you are looking at — content and metadata, exactly as they are in the form — through your real theme, in a pane beside the editor. Nothing is saved: the draft lives only in your editor session, is never written to <code>pages/</code>, and is never cached. Close the pane or click <strong>Refresh</strong> after more edits. You can preview a brand new page before it exists.</p>
+
+<h3>New pages and posts</h3>
+
+<p><strong>+ New page</strong> and <strong>+ New post</strong> open the same form with an extra <strong>Address</strong> field, which decides where the file is created inside <code>pages/</code>:</p>
 
 <ul>
     <li><code>about</code> creates <code>pages/about.html</code>, accessible at <code>/about</code></li>
@@ -244,9 +275,9 @@ https://yoursite.com/documentation/introduction?editor=a3f8c2d1e4b7906f2a1d3c5e7
     <li><code>documentation/setup/myguide</code> creates the file in a subfolder, accessible at that path</li>
 </ul>
 
-<p>Subfolders are created automatically if they don't exist. You cannot overwrite an existing page — if the file already exists you will get an error.</p>
+<p>Addresses may contain lowercase letters, digits and hyphens, with forward slashes for folders — the same characters the framework's rewrite rule routes. Subfolders are created automatically. You cannot overwrite an existing page, and you cannot use a name that clashes with a real folder in the site root (such as <code>images</code>) or with <code>edit</code> itself, because those addresses would never reach the page.</p>
 
-<p>After a page is created the editor opens it automatically so you can continue editing straight away.</p>
+<p>After a page is created the editor reopens it in edit mode so you can carry on.</p>
 
 <hr/>
 
@@ -276,8 +307,12 @@ $editorSessionTimeout = 900;   // 15 minutes
     </thead>
     <tbody>
         <tr>
-            <td>URL token</td>
-            <td>Hides the editor entirely from anyone who doesn't know the token. No login form is shown without it.</td>
+            <td>URL token (required)</td>
+            <td>Makes <code>/edit/</code> answer with the site's 404 page until the token has been presented once on the device. No login form is ever publicly visible, so there is nothing for scanners to find or pound on. Wrong tokens count toward the lockout.</td>
+        </tr>
+        <tr>
+            <td>Device cookie</td>
+            <td>Remembers a device for 30 days after the token is presented. Holds a keyed hash of the token, never the token. HttpOnly, SameSite Strict, Secure on HTTPS. Rotating the token or password invalidates it everywhere.</td>
         </tr>
         <tr>
             <td>Password + bcrypt</td>
@@ -309,11 +344,15 @@ $editorSessionTimeout = 900;   // 15 minutes
         </tr>
         <tr>
             <td>Secure cookie flags</td>
-            <td>The session cookie is flagged HttpOnly (no JavaScript access) and SameSite Strict. On HTTPS it is also flagged Secure.</td>
+            <td>The session cookie is flagged HttpOnly (no JavaScript access) and SameSite Strict. When <code>$SSL</code> is on, or the request arrived over HTTPS, it is also flagged Secure. Plain-HTTP installs get a cookie without the Secure flag so that login actually works there.</td>
         </tr>
         <tr>
             <td>Path validation</td>
-            <td>All file write operations validate that the target path resolves inside <code>pages/</code>. Path traversal attempts are rejected.</td>
+            <td>All file write operations validate that the target path resolves inside <code>pages/</code>. Path traversal attempts are rejected, and new page names are restricted to the characters the router accepts.</td>
+        </tr>
+        <tr>
+            <td>Private previews</td>
+            <td>A preview draft is held in the server-side session of the person editing. A page loaded with <code>?preview</code> only shows a draft to the session that staged it, for that exact page, and such requests are never read from or written to the cache.</td>
         </tr>
         <tr>
             <td>Misconfiguration guards</td>
@@ -344,8 +383,30 @@ $editorSessionTimeout = 900;   // 15 minutes
 
 <p>The enrolment screen requires you to be logged in. If your session expired between loading the page and clicking the link, log in again and retry.</p>
 
+<h3>Preview shows the old content of the page</h3>
+
+<p>The two bundled themes read page content through <code>swf_page_source()</code>, which is what lets a draft stand in for the file on disk. A theme that reads <code>pages/&lt;pagename&gt;.html</code> directly in its <code>page-*.php</code> templates will show the saved file instead. See <a href="#themes">Themes and the preview</a>.</p>
+
+<h3>/edit/ gives a 404</h3>
+
+<p>This is the expected response for anyone who has not presented the token on this device, so first try <code>/edit/?editor=yourtoken</code>. If that also 404s: <code>$editorEnabled</code> may be false, your IP may be in the 15 minute lockout from earlier failed attempts, or the <code>RewriteRule ^edit/?$ plugins/editor/index.php</code> line may be missing from the site's root <code>.htaccess</code> (or <code>mod_rewrite</code> is off). If <code>$editorToken</code> or <code>$editorPasswordHash</code> is empty, <code>/edit/?editor=anything</code> shows a message saying which one to set.</p>
+
+<hr/>
+
+<h2 id="themes">Themes and the Preview</h2>
+
+<p>The preview works by substituting an unsaved draft for the page file at render time. Every place the framework reads a page's source goes through one function, <code>swf_page_source($pagename)</code> in <code>required/vitalfunctions.php</code>, which returns the draft when one is being previewed and the file contents otherwise.</p>
+
+<p>If you write your own theme, read page content in your layout templates the same way:</p>
+
+<pre>
+$filename = swf_page_source($pagename);
+</pre>
+
+<p>rather than calling <code>file_get_contents("./pages/" . $pagename . ".html")</code> directly. With no preview in progress the two are identical, so an existing theme keeps working if you do not change it — its previews will just show the saved content rather than the draft.</p>
+
 <hr/>
 
 <h2>Disabling the Editor</h2>
 
-<p>Set <code>$editorEnabled = false</code> in <code>config.php</code>. When false, the editor plugin is never included, no editor code runs on any page, and the <code>?editor</code> query parameter is ignored entirely.</p>
+<p>Set <code>$editorEnabled = false</code> in <code>config.php</code>. When false, <code>/edit/</code> returns the site's 404 page, no editor code runs on any page, and the <code>?editor</code> and <code>?preview</code> query parameters are ignored entirely. To sign out every remembered device without disabling the editor, change <code>$editorToken</code>.</p>

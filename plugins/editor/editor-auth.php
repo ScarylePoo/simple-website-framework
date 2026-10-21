@@ -19,15 +19,24 @@ require_once __DIR__ . '/editor-totp.php';
 error_reporting(0);
 ini_set('display_errors', 0);
 
-// Secure session cookie flags — must be set before session_start()
-session_set_cookie_params([
-    'lifetime' => 0,
-    'secure'   => true,   // Cookie only sent over HTTPS
-    'httponly' => true,   // Cookie inaccessible to JavaScript
-    'samesite' => 'Strict'
-]);
+// Secure session cookie flags — must be set before session_start().
+// The cookie is marked Secure (HTTPS only) whenever the site is configured for
+// SSL or the current request arrived over HTTPS. A plain-HTTP install (local
+// development, an intranet box) gets a non-Secure cookie, because a browser
+// silently refuses to send a Secure cookie over HTTP and login would never stick.
+$editorCookieSecure = (!empty($SSL) && $SSL === true)
+    || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && $_SERVER['HTTPS'] !== 'off');
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',    // One session for /edit/ and for page previews
+        'secure'   => $editorCookieSecure,
+        'httponly' => true,   // Cookie inaccessible to JavaScript
+        'samesite' => 'Strict'
+    ]);
+    session_start();
+}
 
 define('SWF_EDITOR_SESSION_KEY',  'swf_editor_authed');
 define('SWF_EDITOR_CSRF_KEY',     'swf_editor_csrf');
@@ -199,10 +208,92 @@ function editor_logout() {
 function editor_check_url_token() {
     global $editorToken;
     if (empty($editorToken)) {
-        return true; // No token configured — allow through
+        return false; // No token configured — nothing can match
     }
     $supplied = $_GET['editor'] ?? '';
     return hash_equals($editorToken, $supplied);
+}
+
+/*
+    "Remember this device" cookie for the token.
+
+    Once the token has been presented in a URL, /edit/ sets this cookie so the
+    person does not have to carry the token around for the next 30 days on
+    that device. The cookie value is an HMAC of the token keyed by the password
+    hash — not the token itself — so it discloses nothing if read, and changing
+    either the token or the password invalidates every remembered device.
+
+    It is deliberately separate from the PHP session: the session is the
+    login (minutes), this is the device (weeks). Logging out keeps it.
+*/
+define('SWF_EDITOR_TOKEN_COOKIE', 'swf_editor_device');
+define('SWF_EDITOR_TOKEN_COOKIE_DAYS', 30);
+
+function editor_token_cookie_value() {
+    global $editorToken, $editorPasswordHash;
+    return hash_hmac('sha256', 'device:' . $editorToken, (string) $editorPasswordHash);
+}
+
+function editor_set_token_cookie() {
+    global $editorCookieSecure;
+    setcookie(SWF_EDITOR_TOKEN_COOKIE, editor_token_cookie_value(), [
+        'expires'  => time() + SWF_EDITOR_TOKEN_COOKIE_DAYS * 86400,
+        'path'     => '/',
+        'secure'   => (bool) $editorCookieSecure,
+        'httponly' => true,
+        'samesite' => 'Strict',
+    ]);
+}
+
+function editor_has_token_cookie() {
+    global $editorToken;
+    if (empty($editorToken) || empty($_COOKIE[SWF_EDITOR_TOKEN_COOKIE])) {
+        return false;
+    }
+    return hash_equals(editor_token_cookie_value(), (string) $_COOKIE[SWF_EDITOR_TOKEN_COOKIE]);
+}
+
+/*
+    Name validation for NEW pages.
+
+    Stricter than editor_validate_path() because this name has to survive the
+    rewrite rule in .htaccess, which only routes lowercase-insensitive letters,
+    digits and hyphens in each segment — no underscores, no dots. index.php also
+    lowercases the request before reading the file, so the file must be lowercase
+    for the page to be reachable at all. Returns the normalised name or false.
+
+    The first segment must not collide with a real directory or file in the
+    site root (plugins/, images/, css/ …): Apache serves those directly and the
+    page would be unreachable. The editor's own /edit/ URL is reserved the same
+    way, as are any names in $extraReserved.
+*/
+function editor_validate_new_pagename($pagename, $siteRoot = null, $extraReserved = array('edit')) {
+    if ($siteRoot === null) {
+        $siteRoot = str_replace('\\', '/', getcwd()) . '/';
+    }
+
+    $pagename = strtolower(trim($pagename));
+    $pagename = trim($pagename, '/');
+
+    if ($pagename === '' || !preg_match('/^[a-z0-9\-]+(\/[a-z0-9\-]+)*$/', $pagename)) {
+        return false;
+    }
+
+    $first = explode('/', $pagename)[0];
+    if (in_array($first, $extraReserved, true)) {
+        return false;
+    }
+    if ($first !== 'pages' && file_exists($siteRoot . $first)) {
+        return false;
+    }
+    // "pages" itself is the content directory — a page called /pages/... would
+    // resolve to a file inside pages/pages/, which is legal, but a top-level
+    // page literally named "pages" is shadowed by the directory.
+    if ($pagename === 'pages') {
+        return false;
+    }
+
+    return $pagename;
 }
 
 /*

@@ -1,8 +1,32 @@
 <?php
+	/*
+		swf_page_source() returns the raw source of a page (metadata comments and
+		body together), exactly as it sits in pages/<pagename>.html.
+
+		Every place that needs the page source — the metadata extraction below,
+		the page-*.php layout templates in every theme, and header.php — must go
+		through this function rather than calling file_get_contents() directly.
+
+		The reason is the editor's preview mode. When an editor session is
+		previewing an unsaved draft, index.php sets $pageContentOverride to the
+		draft text before any of this runs. This function hands that back instead
+		of reading the disk, so the draft renders through the real theme without
+		ever being written to pages/. With no preview in progress the override is
+		null and this is a plain file read.
+	*/
+	function swf_page_source($pagename) {
+		global $pageContentOverride;
+		if (isset($pageContentOverride) && $pageContentOverride !== null) {
+			return $pageContentOverride;
+		}
+		$file = "pages/" . $pagename . ".html";
+		return file_exists($file) ? file_get_contents($file) : '';
+	}
+
 	// This function helps extract special values from a file based on a given pattern
 	function extractValueFromPattern($filename, $pattern) {
-		// Read the content of the Markdown file
-		$markdownContent = file_get_contents("pages/" . $filename . ".html");
+		// Read the content of the page file (or the editor's preview draft)
+		$markdownContent = swf_page_source($filename);
 		// Check if the pattern matches any part of the content
 		if (preg_match($pattern, $markdownContent, $matches)) {
 			// If there's a match, return the extracted value (trimmed to remove any extra spaces)

@@ -86,7 +86,18 @@
 	$requestedPage = trim(parse_url($requestUri, PHP_URL_PATH), '/'); /* This line parses the requested URI using the parse_url() function and extracts the path component using the PHP_URL_PATH constant. The trim() function is then used to remove any leading or trailing slashes from the path. */
 	if ($requestedPage == "") { $requestedPage = "home"; }
 	//echo $requestedPage; /* This line is commented out and is not executed. It's purpose is to echo/print the value of $requestedPage for testing. */
-	
+
+
+	/* Editor preview. When a logged-in editor session asks for ?preview on a page, the draft it is
+	   holding is rendered through the theme instead of the file on disk. editor-preview.php only
+	   sets $pageContentOverride when the editor is enabled, the session is authenticated, and the
+	   draft is for this exact page — otherwise it stays null and the request is treated normally.
+	   The page need not exist yet, which is how a brand new page can be previewed before it is created. */
+	$pageContentOverride = null;
+	if (isset($_GET['preview']) && isset($editorEnabled) && $editorEnabled === true) {
+		include 'plugins/editor/editor-preview.php';
+	}
+
 	
 	/* Generate list of potential target pages */
 	/* The purpose of this code block is to generate a list of files in the pages folder (and subfolders). If the requested page is not in that list, send it to 404. This can help eliminate some potential attack vectors*/
@@ -119,15 +130,16 @@
 	
 
 	// Check if the requested page exists in the list of files. If it doesn't, then force it onto a 404 page.
-	if (!in_array("pages/" . $requestedPage . ".html", $files)) {
+	// (Skipped while an editor preview draft is held for this page — see above.)
+	if ($pageContentOverride === null && !in_array("pages/" . $requestedPage . ".html", $files)) {
 		header("Location: " . $protocol . $_SERVER['HTTP_HOST'] . "/404");
 		die();
 	}
 	/* END Generate list of potential target pages */
-	
-	
+
+
 	/* This is a catchall, just in case. There is also another catchall in the config file, just in case this one doesn't do the trick. This is nowhere near as sophisticated as the approach above, but it still could potentially catch things that fell through the cracks */
-	if (!file_exists("pages/" . $requestedPage .".html")) { 
+	if ($pageContentOverride === null && !file_exists("pages/" . $requestedPage .".html")) {
 		header("Location: " . $protocol . $_SERVER['HTTP_HOST'] . "/404");
 		die();
 	}
