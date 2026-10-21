@@ -17,11 +17,14 @@
 # either zip. GitHub already attaches "Source code (zip)" to every release for
 # anyone who wants that.
 #
-# How to cut a release:
-#     git tag v1.4.0
-#     git push origin v1.4.0
-# The release is created automatically with both zips attached. Edit the
-# release notes on GitHub afterwards if you like.
+# How to cut a release — either way works:
+#   - On GitHub: Releases -> "Draft a new release", type a new tag like
+#     v1.4.0, write your notes, Publish. The zips are attached a minute later.
+#   - From the command line:
+#         git tag v1.4.0
+#         git push origin v1.4.0
+#     The release is created for you with generated notes.
+# The tag must start with "v".
 #
 # "Run workflow" from the Actions tab builds the same zips without making a
 # release, so you can check the contents of a build first; they appear under
@@ -226,6 +229,9 @@ jobs:
         with:
           name: Simple Website Framework ${{ steps.version.outputs.version }}
           generate_release_notes: true
+          # If you made the release in the GitHub UI first, your notes stay
+          # and the download instructions below are added underneath.
+          append_body: true
           files: dist/*.zip
           body: |
             **New site:** download `swf-install-${{ steps.version.outputs.version }}.zip`, unzip it into your web root, copy `config/config-example.php` to `config/config.php` and set your domain. `INSTALL.txt` inside has the steps.
