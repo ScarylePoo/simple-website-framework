@@ -605,6 +605,60 @@ mark {
 }
 
 
+/* Video ([video] shortcode) ---------------
+   The frame holds its shape before the file
+   loads, so the page doesn't jump. Themes can
+   restyle any of these classes, or change the
+   default shape with --swf-video-ratio. */
+.swf-video {
+	margin: 0 auto var(--space);
+	max-width: 100%;
+}
+
+.swf-video-sized {
+	max-width: min(100%, var(--swf-video-width));
+}
+
+.swf-video-frame {
+	position: relative;
+	width: 100%;
+	aspect-ratio: var(--swf-video-ratio, 16 / 9);
+	background: #000;
+	overflow: hidden;
+}
+
+.swf-video-frame video {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+/* The frame clips overflow, so pull the focus
+   ring inside the video instead of losing it. */
+.swf-video-frame video:focus-visible {
+	outline-offset: -3px;
+}
+
+.swf-video-cover .swf-video-frame video {
+	object-fit: cover;
+}
+
+/* ratio="auto": size to the file itself. */
+.swf-video-auto .swf-video-frame {
+	aspect-ratio: auto;
+}
+
+.swf-video-auto .swf-video-frame video {
+	height: auto;
+}
+
+.swf-video figcaption {
+	margin-top: calc(var(--space) * 0.5);
+	font-size: 0.9em;
+	color: var(--color-muted);
+}
+
+
 /*********************************************
 * END OF BASE CSS
 **********************************************/
