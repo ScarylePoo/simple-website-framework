@@ -1,0 +1,233 @@
+#
+# Build the two distribution zips and attach them to a GitHub release.
+#
+#   swf-upgrade-<version>.zip   Framework code only. Unzip it over an existing
+#                               site to upgrade, WordPress style. It never
+#                               contains pages/, images/, config/config.php,
+#                               robots.txt or your .htaccess (the current
+#                               reference .htaccess is included as
+#                               .htaccess.dist so you can diff it).
+#
+#   swf-install-<version>.zip   Everything in the upgrade zip plus a working
+#                               .htaccess, robots.txt, a favicon and a clean
+#                               starter pages/ (home, 404, menu, archives,
+#                               footer columns). A complete empty site.
+#
+# The repository's own pages/ is the documentation site and is not shipped in
+# either zip. GitHub already attaches "Source code (zip)" to every release for
+# anyone who wants that.
+#
+# How to cut a release:
+#     git tag v1.4.0
+#     git push origin v1.4.0
+# The release is created automatically with both zips attached. Edit the
+# release notes on GitHub afterwards if you like.
+#
+# "Run workflow" from the Actions tab builds the same zips without making a
+# release, so you can check the contents of a build first; they appear under
+# the run as downloadable artifacts.
+#
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Work out the version string
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sanity check the PHP
+        run: |
+          sudo apt-get install -y -qq php-cli > /dev/null
+          find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l > /dev/null
+          echo "All PHP files parse."
+
+      - name: Stage the upgrade package
+        run: |
+          set -euo pipefail
+          STAGE=build/upgrade
+          mkdir -p "$STAGE"
+
+          # Framework code. Anything a site owner edits lives outside this list.
+          # (tar in, tar out: copies the listed paths and nothing else, with
+          # the excludes applied, and keeps the directory structure.)
+          tar -c \
+            --exclude 'plugins/editor/lockouts.json' \
+            --exclude 'plugins/editor/totp-used.json' \
+            --exclude 'themes/starter/swf-starter-theme.zip' \
+            --exclude 'plugins/yBox-main/demo.html' \
+            --exclude 'plugins/yBox-main/demo_files' \
+            --exclude 'plugins/responsive-nav-js/demos' \
+            --exclude '.DS_Store' \
+            index.php rss_generator.php LICENSE \
+            required includes css plugins \
+            themes/starter themes/skeleton \
+            config/config-example.php config/.htaccess \
+          | tar -x -C "$STAGE"
+
+          # Your .htaccess is yours. Ship the reference copy under a name
+          # Apache will never serve (anything starting with .ht is denied by
+          # default) so you can diff it against the one you have.
+          cp .htaccess "$STAGE/.htaccess.dist"
+
+          echo "${{ steps.version.outputs.version }}" > "$STAGE/version.txt"
+
+          cat > "$STAGE/UPGRADE.txt" <<'EOF'
+          Simple Website Framework — upgrade package
+          ==========================================
+
+          Unzip this over your existing site, replacing files when asked.
+          That is the whole upgrade.
+
+          What it replaces
+            index.php, rss_generator.php, LICENSE
+            required/   includes/   css/   plugins/
+            themes/starter/   themes/skeleton/
+            config/config-example.php   config/.htaccess
+
+          What it never touches
+            config/config.php        your settings
+            pages/                   your content
+            images/                  your images
+            robots.txt
+            .htaccess                see below
+            any theme of your own    anything in themes/ other than starter and skeleton
+
+          .htaccess
+            The current reference .htaccess is included as .htaccess.dist.
+            Compare it with yours — if a release needs a new rewrite rule, the
+            release notes will say so, and you can copy the line across without
+            losing your own redirects. You can delete .htaccess.dist afterwards
+            or leave it; Apache will not serve it either way.
+
+          After unzipping
+            1. Open config/config-example.php and look for settings you do not
+               have in config/config.php. New features are always off until you
+               switch them on, so nothing changes until you do.
+            2. If you use HTML caching, delete any cached-*.html files in the
+               site root so pages are regenerated with the new code.
+            3. If you made changes inside themes/starter or themes/skeleton,
+               they have just been overwritten. Make your own theme by copying
+               one of them to a new folder and pointing $theme at it.
+
+          Documentation: https://simplewebframe.work
+          EOF
+
+      - name: Stage the install package
+        run: |
+          set -euo pipefail
+          STAGE=build/install
+          mkdir -p "$STAGE"
+
+          # Start from the upgrade package, minus the upgrade-only notes
+          cp -a build/upgrade/. "$STAGE/"
+          rm -f "$STAGE/UPGRADE.txt" "$STAGE/.htaccess.dist"
+
+          # A real .htaccess, robots.txt, favicon and the clean starter pages
+          cp .htaccess "$STAGE/.htaccess"
+          (cd extras/install-site && tar -c --exclude README.md .) | tar -x -C "$STAGE"
+
+          cat > "$STAGE/INSTALL.txt" <<'EOF'
+          Simple Website Framework — new site
+          ===================================
+
+          1. Upload everything in this zip to your web root (or a subfolder).
+             Make sure the hidden .htaccess file came along — some FTP clients
+             hide files that start with a dot.
+
+          2. Copy config/config-example.php to config/config.php and set at
+             least these three values:
+               $WebsiteURL   your domain, without http:// (e.g. example.com)
+               $SSL          true if the site is served over https
+               $ForceWWW     true to force www., false to strip it
+
+          3. Visit the site. You should see the welcome page. If every address
+             gives a 404, Apache's mod_rewrite is off or AllowOverride is not
+             set to All for the folder.
+
+          4. Edit pages/home.html, pages/navigation.html and the three files in
+             pages/footer/ to make it yours. Pages are files in pages/, posts
+             are files in pages/posts/.
+
+          Optional
+            Browser editor   set $editorEnabled, $editorToken and
+                             $editorPasswordHash in config.php, then go to
+                             /edit/?editor=yourtoken. Setup is described in
+                             config-example.php.
+            HTML caching     $enableHTMLCacheServe = true; the web server then
+                             needs write access to the site root.
+
+          Full documentation: https://simplewebframe.work
+          EOF
+
+      - name: Build the zips
+        id: zips
+        run: |
+          set -euo pipefail
+          V="${{ steps.version.outputs.version }}"
+          mkdir -p dist
+          (cd build/upgrade && zip -qr "../../dist/swf-upgrade-${V}.zip" . -x '.keep')
+          (cd build/install && zip -qr "../../dist/swf-install-${V}.zip" . -x '*/.keep')
+          ls -l dist
+          echo
+          echo "== upgrade package, top level =="
+          unzip -l "dist/swf-upgrade-${V}.zip" | awk '{print $4}' | grep -v '/.' | grep . | sort
+          echo
+          echo "== install package, pages/ =="
+          unzip -l "dist/swf-install-${V}.zip" | awk '{print $4}' | grep '^pages/' | sort
+
+      - name: Refuse to ship anything that should not be there
+        run: |
+          set -euo pipefail
+          V="${{ steps.version.outputs.version }}"
+          for z in dist/*.zip; do
+            if unzip -l "$z" | awk '{print $4}' | grep -Eq '^(config/config\.php|pages/documentation/|extras/|\.git|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'; then
+              echo "::error::$z contains files that must not be distributed"
+              unzip -l "$z" | awk '{print $4}' | grep -E '^(config/config\.php|pages/documentation/|extras/|\.git|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'
+              exit 1
+            fi
+          done
+          if unzip -l "dist/swf-upgrade-${V}.zip" | awk '{print $4}' | grep -Eq '^(pages/|images/|robots\.txt|\.htaccess$)'; then
+            echo "::error::upgrade package must not contain site content"
+            exit 1
+          fi
+          echo "Package contents look right."
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swf-packages-${{ steps.version.outputs.version }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+      - name: Create the GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Simple Website Framework ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: dist/*.zip
+          body: |
+            **New site:** download `swf-install-${{ steps.version.outputs.version }}.zip`, unzip it into your web root, copy `config/config-example.php` to `config/config.php` and set your domain. `INSTALL.txt` inside has the steps.
+
+            **Upgrading:** download `swf-upgrade-${{ steps.version.outputs.version }}.zip` and unzip it over your existing site, replacing files. It never touches `pages/`, `images/`, `config/config.php`, `robots.txt` or your `.htaccess`. `UPGRADE.txt` inside has the details, including anything to copy across from `.htaccess.dist`.

@@ -1,3 +1,4 @@
 config/config.php
 passwordhash.php
-plugins/editor/totp-used.json
+plugins/editor/totp-used.jsonbuild/
+dist/

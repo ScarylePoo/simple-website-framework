@@ -19,8 +19,9 @@
 <p>The framework does <strong>not</strong> require a database, Composer, or any package manager. Everything it needs is bundled in the repository.</p>
 <hr/>
 <h2>Installation</h2>
-<p><strong>1. Clone or download the repository</strong></p>
-<p>Place the files in your web server's document root, or in a subdirectory if you prefer.</p>
+<p><strong>1. Get the files</strong></p>
+<p>The easiest way is the install package. Each release on the <a href="https://github.com/ScarylePoo/simple-website-framework/releases">releases page</a> has a <code>swf-install-&lt;version&gt;.zip</code>: the framework plus a clean starter site &mdash; a welcome home page, a menu, a 404 page, an archives page and three footer columns &mdash; with none of this documentation site's content in it. Unzip it into your web server's document root, or a subdirectory if you prefer, and make sure the hidden <code>.htaccess</code> file came along; some FTP clients hide files that start with a dot.</p>
+<p>If you would rather have this documentation site as a starting point, or want to work from source, clone the repository instead:</p>
 <pre><code>git clone https://github.com/ScarylePoo/simple-website-framework.git
 </code></pre>
 <p><strong>2. Copy and configure <code>config.php</code></strong></p>
@@ -46,6 +47,16 @@ sudo systemctl restart apache2
 </code></pre>
 <p><strong>5. Visit your site</strong></p>
 <p>If everything is configured correctly, navigating to your domain should display the home page. If you see a blank page or errors, check your PHP error log.</p>
+<hr/>
+<h2>Upgrading</h2>
+<p>Each release also has a <code>swf-upgrade-&lt;version&gt;.zip</code>. Unzip it over your existing site, replacing files when asked, and you are upgraded. It contains only framework code &mdash; <code>index.php</code>, <code>required/</code>, <code>includes/</code>, <code>css/</code>, <code>plugins/</code>, the two bundled themes and <code>config/config-example.php</code> &mdash; and never touches <code>pages/</code>, <code>images/</code>, <code>config/config.php</code>, <code>robots.txt</code>, your <code>.htaccess</code> or any theme of your own.</p>
+<p>Three things to check afterwards, all spelled out in the <code>UPGRADE.txt</code> inside the zip:</p>
+<ul>
+    <li>Compare <code>.htaccess.dist</code> (the current reference copy, which Apache will never serve) with your <code>.htaccess</code>. If a release needs a new rewrite rule the release notes will say so, and you can copy the line across without losing your own redirects.</li>
+    <li>Look through <code>config/config-example.php</code> for settings you do not yet have. New features are always off until you switch them on, so nothing changes until you do.</li>
+    <li>If you use HTML caching, delete any <code>cached-*.html</code> files in the site root so pages are regenerated with the new code.</li>
+</ul>
+<p>The bundled <code>starter</code> and <code>skeleton</code> themes are replaced by an upgrade. That is why the <a href="documentation/developers/themesystem">theme guide</a> says to copy one to a new folder rather than editing it in place.</p>
 <hr/>
 <h2>Development vs Production</h2>
 <p>The framework ships with caching <strong>disabled</strong> by default, which is correct for development. Before deploying to production, enable caching in <code>config.php</code>:</p>
