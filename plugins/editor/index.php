@@ -562,7 +562,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                         <li data-f="<?php echo swf_e(strtolower($p['title'] . ' ' . $p['name'])); ?>">
                             <a href="<?php echo swf_e(swf_editor_url(['page' => $p['name']])); ?>">
                                 <div class="t"><?php echo swf_e($p['title']); ?></div>
-                                <div class="m"><code>/<?php echo swf_e($p['name']); ?></code><?php if ($p['layout'] !== ''): ?><span><?php echo swf_e($p['layout']); ?></span><?php endif; ?></div>
+                                <div class="m"><code>/<?php echo swf_e($p['name']); ?></code>
+                                    <?php if (strpos($p['layout'], 'postarchives') === 0): ?>
+                                        <span><?php echo $p['filter'] === '' ? 'Lists all posts' : 'Lists posts in <em>' . swf_e($p['filter']) . '</em>'; ?></span>
+                                    <?php elseif ($p['layout'] !== ''): ?>
+                                        <span><?php echo swf_e($p['layout']); ?></span>
+                                    <?php endif; ?>
+                                </div>
                             </a>
                         </li>
                         <?php endforeach; ?>
@@ -602,6 +608,26 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                 <h1><?php echo $isNew ? ($isPost ? 'New post' : 'New page') : swf_e($m['pagetitle'] !== '' ? $m['pagetitle'] : $editName); ?></h1>
                 <?php if (!$isNew): ?><span class="path"><code>pages/<?php echo swf_e($editName); ?>.html</code></span><?php endif; ?>
             </div>
+
+            <?php if ($isNew && $newArchiveFor !== ''): ?>
+                <div class="notice">
+                    <strong>This is a category page.</strong> It will list every post tagged <em><?php echo swf_e($newArchiveFor); ?></em>, newest first,
+                    and visitors will reach it at <code>/<?php echo swf_e(preg_replace('/[^a-z0-9]+/', '-', $newArchiveFor)); ?></code>.
+                    The posts themselves are written and edited from the <a href="<?php echo swf_e(swf_editor_url()); ?>">Posts list</a>.
+                    Anything you type in the content box below appears above the list of posts.
+                </div>
+            <?php elseif (!$isNew && strpos($m['pagelayout'], 'postarchives') === 0): ?>
+                <div class="notice">
+                    <strong>This is a category page.</strong>
+                    <?php if (trim($m['postcategory']) === ''): ?>
+                        It lists every post on the site, newest first.
+                    <?php else: ?>
+                        It lists every post tagged <em><?php echo swf_e($m['postcategory']); ?></em>, newest first.
+                    <?php endif; ?>
+                    The posts themselves are written and edited from the <a href="<?php echo swf_e(swf_editor_url()); ?>">Posts list</a>.
+                    Anything in the content box below appears above the list.
+                </div>
+            <?php endif; ?>
 
             <div class="editor-grid" id="editor-grid">
             <div>
@@ -671,7 +697,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                         <input type="hidden" id="f-pagecategory" value="<?php echo swf_e(implode(', ', $pageCats)); ?>">
                     </div>
                     <div class="full<?php echo strpos($m['pagelayout'], 'postarchives') === 0 ? '' : ' hidden'; ?>" id="row-postcategory">
-                        <label>Archive filter <small>(which posts this archive page lists)</small></label>
+                        <label>Which posts this page lists <small>(pick a category, or show all)</small></label>
                         <?php
                             $filterNow = strtolower(trim($m['postcategory']));
                             $filterKnown = $filterNow === '' || $filterNow === 'uncategorized' || isset($categories[$filterNow]);
@@ -806,23 +832,65 @@ function swfLayoutChanged() {
     save/preview code keeps sending one comma separated string, exactly as
     it would from a text box.
 */
-var SWF_NEW_ARCHIVE_URL = SWF_EDITOR + '?new=page&archive=';
+var SWF_ARCHIVE_LAYOUT = <?php echo json_encode(isset($layoutOptions['postarchives-styled']) ? 'postarchives-styled' : 'postarchives'); ?>;
+var SWF_SITE_AUTHOR    = <?php echo json_encode($siteAuthor); ?>;
+var swfJustCreated     = {};   // slug -> pagename, for the "created" message
+
+function swfTitleCase(s) { return s.replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
 
 function swfCatsChanged() {
-    var checked = [], orphans = [];
+    var checked = [], orphans = [], created = [];
     document.querySelectorAll('#cat-chips .chip').forEach(function (chip) {
         var cb = chip.querySelector('input');
         if (!cb.checked) { return; }
         checked.push(cb.value);
         if (chip.getAttribute('data-archive') === '') { orphans.push(cb.value); }
+        else if (swfJustCreated[cb.value]) { created.push(cb.value); }
     });
     document.getElementById('f-pagecategory').value = checked.join(', ');
     var note = document.getElementById('cat-note');
-    if (orphans.length === 0) { note.innerHTML = ''; return; }
-    note.innerHTML = orphans.map(function (slug) {
-        return 'No archive page lists <strong>' + swfEsc(slug) + '</strong> yet — '
-             + '<a href="' + SWF_NEW_ARCHIVE_URL + encodeURIComponent(slug) + '" target="_blank" rel="noopener">create one</a>.';
-    }).join('<br>');
+    var lines = [];
+    orphans.forEach(function (slug) {
+        lines.push('Visitors can\'t browse <strong>' + swfEsc(slug) + '</strong> yet &mdash; there\'s no page that lists posts in it. '
+                 + '<a href="#" data-slug="' + swfEsc(slug) + '" onclick="swfCreateArchive(this);return false;">Create a &ldquo;' + swfEsc(swfTitleCase(slug)) + '&rdquo; page</a>');
+    });
+    created.forEach(function (slug) {
+        var name = swfJustCreated[slug];
+        lines.push('Created <strong>/' + swfEsc(name) + '</strong> &mdash; it lists every post tagged <em>' + swfEsc(slug) + '</em>. '
+                 + '<a href="' + SWF_EDITOR + '?page=' + encodeURIComponent(name) + '" target="_blank" rel="noopener">Edit that page</a> if you want to change its title or text.');
+    });
+    note.innerHTML = lines.join('<br>');
+}
+
+/*
+    Create the category page right here, without leaving the post. The page
+    is the same one the New page form would have made from ?new=page&archive=…
+    — a styled archive filtered on the category — so there is nothing for the
+    user to decide, and no reason to send them to a different form.
+*/
+function swfCreateArchive(link) {
+    var slug = link.getAttribute('data-slug');
+    var name = slug.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    link.textContent = 'Creating…';
+    jQuery.post(SWF_SAVE, {
+        action: 'new', csrf_token: SWF_CSRF,
+        pagename: name,
+        pagetitle: swfTitleCase(slug),
+        pagelayout: SWF_ARCHIVE_LAYOUT,
+        pagetype: 'website',
+        pagedate: '', pageauthor: SWF_SITE_AUTHOR, pageimage: '',
+        pageexcerpt: 'All posts in ' + slug + '.',
+        pagekeywords: slug,
+        postcategory: slug,
+        content: ''
+    }, function (r) {
+        if (!r.success) { swfStatus(r.message, 'err'); swfCatsChanged(); return; }
+        swfJustCreated[slug] = r.pagename;
+        document.querySelectorAll('#cat-chips .chip').forEach(function (chip) {
+            if (chip.querySelector('input').value === slug) { chip.setAttribute('data-archive', r.pagename); chip.classList.remove('orphan'); }
+        });
+        swfCatsChanged();
+    }, 'json').fail(function () { swfStatus('Could not create the page.', 'err'); swfCatsChanged(); });
 }
 
 function swfCatAdd() {
