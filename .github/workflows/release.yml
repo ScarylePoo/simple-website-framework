@@ -112,6 +112,7 @@ jobs:
             config/config.php        your settings
             pages/                   your content
             images/                  your images
+            backups/                 page versions, trash and site backups
             robots.txt
             .htaccess                see below
             any theme of your own    anything in themes/ other than starter and skeleton
@@ -204,9 +205,9 @@ jobs:
           set -euo pipefail
           V="${{ steps.version.outputs.version }}"
           for z in dist/*.zip; do
-            if unzip -l "$z" | awk '{print $4}' | grep -Eq '^(config/config\.php|pages/documentation/|extras/|\.git|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'; then
+            if unzip -l "$z" | awk '{print $4}' | grep -Eq '^(config/config\.php|pages/documentation/|extras/|\.git|backups/|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'; then
               echo "::error::$z contains files that must not be distributed"
-              unzip -l "$z" | awk '{print $4}' | grep -E '^(config/config\.php|pages/documentation/|extras/|\.git|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'
+              unzip -l "$z" | awk '{print $4}' | grep -E '^(config/config\.php|pages/documentation/|extras/|\.git|backups/|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'
               exit 1
             fi
           done

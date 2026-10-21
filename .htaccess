@@ -14,6 +14,10 @@
     # This must come before the framework rule below so "edit" is never treated as a page.
     RewriteRule ^edit/?$ plugins/editor/index.php [L,QSA]
 
+    # Backups (page versions, deleted pages, site archives) live in backups/ and must never be
+    # served. The folder carries its own .htaccess that denies everything; this is a second lock.
+    RewriteRule ^backups(/|$) - [R=404,L]
+
     # These rules make the framework function. Without these 3 lines, it will not function properly.
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

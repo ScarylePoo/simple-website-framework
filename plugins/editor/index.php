@@ -38,6 +38,7 @@ if (!isset($editorEnabled) || $editorEnabled !== true) {
 }
 
 require_once __DIR__ . '/editor-auth.php';
+require_once __DIR__ . '/editor-backup.php';
 
 /*
     Small helpers used throughout this file.
@@ -321,6 +322,18 @@ $newKind  = '';
 if ($isAuthed) {
     if (isset($_GET['totp']) && $_GET['totp'] === 'setup') {
         $view = 'totp';
+    } elseif (isset($_GET['backups'])) {
+        $view = 'backups';
+    } elseif (isset($_GET['history'])) {
+        $candidate = trim($_GET['history']);
+        $path = editor_validate_path($candidate, SWF_ROOT);
+        if ($path !== false && file_exists($path)) {
+            $view     = 'history';
+            $editName = strtolower(ltrim($candidate, '/.'));
+        } else {
+            $view = 'list';
+            $notFound = $candidate;
+        }
     } elseif (isset($_GET['new'])) {
         $view    = 'form';
         $newKind = $_GET['new'] === 'post' ? 'post' : 'page';
@@ -490,6 +503,31 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 /* totp */
 .totp-wrap { max-width: 680px; margin: 0 auto; }
 
+/* history + backups */
+.vlist { list-style: none; margin: 0; padding: 0; }
+.vlist li { border-bottom: 1px solid var(--line); padding: 12px 16px; }
+.vlist li:last-child { border-bottom: 0; }
+.vlist .vhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.vlist .vhead .when { font-weight: 550; }
+.vlist .vhead .vmeta { color: var(--muted); font-size: 0.85rem; }
+.vlist .vhead .spacer { flex: 1; }
+.vlist details { margin-top: 8px; }
+.vlist summary { cursor: pointer; color: var(--muted); font-size: 0.88rem; }
+.diff { margin: 8px 0 0; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; }
+.diff span { display: block; }
+.diff-add { background: var(--ok-bg); color: var(--ok-ink); }
+.diff-del { background: var(--err-bg); color: var(--err-ink); }
+.diff-ctx { color: var(--muted); }
+.diff-skip { color: var(--muted); text-align: center; font-style: italic; }
+.diff-note { color: var(--muted); font-size: 0.88rem; }
+.btn.danger { background: var(--panel); color: var(--err-ink); border-color: var(--err-line); }
+.btn.danger:hover { background: var(--err-bg); }
+.stack > .panel { margin-bottom: 24px; }
+.panel .pad { padding: 16px; }
+.panel .pad p { margin: 0 0 10px; }
+.panel .pad p:last-child { margin-bottom: 0; }
+.kv { color: var(--muted); font-size: 0.88rem; }
+
 @media (max-width: 860px) {
     .lists, .editor-grid.previewing { grid-template-columns: 1fr; }
     .meta { grid-template-columns: 1fr; }
@@ -528,6 +566,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
     <div class="topbar">
         <a class="brand" href="<?php echo swf_e(swf_editor_url()); ?>">Editor <small><?php echo swf_e($siteTitle); ?></small></a>
         <span class="spacer"></span>
+        <a class="quiet" href="<?php echo swf_e(swf_editor_url(['backups' => 1])); ?>">Backups</a>
         <a class="quiet" href="/" target="_blank" rel="noopener">View site &#8599;</a>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['totp' => 'setup'])); ?>"><?php echo $totpOn ? 'Two-factor: on' : 'Two-factor: off'; ?></a>
         <button class="quiet" type="button" onclick="swfLogout()">Log out</button>
@@ -539,11 +578,138 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
             <?php echo editor_totp_setup_panel(swf_editor_url(), $siteTitle, $WebsiteURL ?? '', swf_editor_url()); ?>
         </div>
 
+    <?php elseif ($view === 'history'): ?>
+        <?php
+            $versions = backup_list_versions($editName);
+            $current  = file_get_contents(SWF_ROOT . 'pages/' . $editName . '.html');
+            $curMeta  = swf_read_page($editName);
+        ?>
+        <div class="wrap">
+            <div class="formhead">
+                <a class="btn small secondary" href="<?php echo swf_e(swf_editor_url(['page' => $editName])); ?>">&larr; Back to editing</a>
+                <h1>History: <?php echo swf_e($curMeta['meta']['pagetitle'] !== '' ? $curMeta['meta']['pagetitle'] : $editName); ?></h1>
+                <span class="path"><code>pages/<?php echo swf_e($editName); ?>.html</code></span>
+            </div>
+            <div class="notice">
+                A copy of the page is kept every time it is saved with changes; the newest <?php echo backup_keep_versions(); ?> are listed here.
+                Each entry shows what changed <em>between that version and the page as it is now</em>. <strong>Restore</strong> puts a version back and keeps the current one in the history, so a restore can always be undone.
+            </div>
+            <div class="panel">
+                <?php if (!$versions): ?>
+                    <div class="pad kv">No earlier versions yet. One will appear the next time this page is saved.</div>
+                <?php endif; ?>
+                <ul class="vlist">
+                <?php foreach ($versions as $v): $old = file_get_contents($v['file']); $diff = backup_diff_html($old, $current); ?>
+                    <li>
+                        <div class="vhead">
+                            <span class="when"><?php echo date('D j M Y, g:i a', $v['time']); ?></span>
+                            <span class="vmeta"><?php echo backup_fmt_size($v['size']); ?><?php echo $diff === '' ? ' &middot; identical to the current page' : ''; ?></span>
+                            <span class="spacer"></span>
+                            <a class="btn small secondary" href="/plugins/editor/editor-download.php?page=<?php echo urlencode($editName); ?>&amp;version=<?php echo urlencode($v['stamp']); ?>" target="_blank" rel="noopener">View</a>
+                            <button class="btn small" type="button" onclick="swfRestore(<?php echo swf_e(json_encode($v['stamp'])); ?>, this)"<?php echo $diff === '' ? ' disabled' : ''; ?>>Restore</button>
+                        </div>
+                        <?php if ($diff !== ''): ?>
+                        <details><summary>What changed</summary><?php echo $diff; ?></details>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            </div>
+            <p class="kv" style="margin-top:12px;"><span class="status" id="status"></span></p>
+        </div>
+
+    <?php elseif ($view === 'backups'): ?>
+        <?php
+            $archives  = backup_list_archives();
+            $trash     = backup_list_trash();
+            $bdirOk    = backup_dir() !== false;
+            $autoDays  = backup_auto_days();
+            $latestC   = backup_latest_archive_time('content');
+        ?>
+        <div class="wrap stack">
+            <div class="formhead">
+                <a class="btn small secondary" href="<?php echo swf_e(swf_editor_url()); ?>">&larr; All pages</a>
+                <h1>Backups</h1>
+            </div>
+
+            <?php if (!$bdirOk): ?>
+                <div class="notice err"><strong>The backup folder cannot be written.</strong> <code><?php echo swf_e(backup_dir_label()); ?></code> must exist and be writable by the web server, or set <code>$backupDir</code> in <code>config/config.php</code> to a folder that is. Until then nothing below works and the editor will refuse to save, because it cannot keep the previous version.</div>
+            <?php elseif (!backup_dir_is_inside_webroot()): ?>
+                <div class="notice ok">Backups are stored outside the web root at <code><?php echo swf_e(backup_dir_label()); ?></code>, which is the safest arrangement.</div>
+            <?php else: ?>
+                <div class="notice">Backups are stored in <code><?php echo swf_e(backup_dir_label()); ?></code> inside the site. That folder carries an <code>.htaccess</code> that denies all web access and an empty <code>index.html</code>; the only way to fetch anything from it is through this screen, logged in. If your server is not Apache, set <code>$backupDir</code> in <code>config/config.php</code> to a folder outside the web root instead.</div>
+            <?php endif; ?>
+
+            <div class="panel">
+                <header><h2>Make a backup</h2></header>
+                <div class="pad">
+                    <p><strong>Content backup</strong> &mdash; everything that is yours: <code>pages/</code>, <code>images/</code>, your theme, <code>config.php</code>, <code>robots.txt</code>, <code>.htaccess</code>. No framework code. This is the one to keep: it restores onto any framework version by unzipping it over a working install.</p>
+                    <p><strong>Full backup</strong> &mdash; the complete site including the framework. Larger, and the framework part can always be re-downloaded, but it is a single file that is the whole site.</p>
+                    <p class="kv">Both include <code>config/config.php</code>, which holds the editor password hash and two-factor secret. Treat a downloaded backup as you would the site itself.</p>
+                    <div class="actions" style="margin-top:12px;">
+                        <button class="btn" type="button" onclick="swfBackup('content', this)">Make content backup</button>
+                        <button class="btn secondary" type="button" onclick="swfBackup('full', this)">Make full backup</button>
+                        <span class="status" id="status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <header>
+                    <h2>Automatic backups</h2>
+                </header>
+                <div class="pad">
+                    <?php if ($autoDays > 0): ?>
+                        <p>Whenever a page is saved, the editor checks for a content backup newer than <?php echo $autoDays; ?> day<?php echo $autoDays === 1 ? '' : 's'; ?> and makes one if there isn't.
+                        <?php if ($latestC): ?>The newest content backup is from <strong><?php echo date('D j M Y, g:i a', $latestC); ?></strong><?php echo (time() - $latestC) > $autoDays * 86400 ? ', so the next save will make one' : ''; ?>.<?php else: ?>There is none yet, so the next save will make one.<?php endif; ?></p>
+                    <?php else: ?>
+                        <p>Automatic backups on save are switched off (<code>$backupAutoDays = 0</code>).</p>
+                    <?php endif; ?>
+                    <p class="kv">Automatic and scheduled backups are rotated: the newest <?php echo backup_keep_archives(); ?> of each kind are kept. Backups you make with the buttons above are never removed automatically. For backups on a timetable, run <code>php plugins/editor/backup-cli.php content</code> from your host's cron; see the documentation.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <header><h2>Stored backups</h2><span class="count"><?php echo count($archives); ?></span></header>
+                <?php if (!$archives): ?><div class="pad kv">No backups stored yet.</div><?php endif; ?>
+                <ul class="vlist">
+                <?php foreach ($archives as $a): ?>
+                    <li class="vhead">
+                        <span class="when"><?php echo $a['kind'] === 'full' ? 'Full site' : 'Content'; ?></span>
+                        <span class="vmeta"><?php echo date('D j M Y, g:i a', $a['time']); ?> &middot; <?php echo backup_fmt_size($a['size']); ?> &middot; <?php echo $a['trigger'] === 'manual' ? 'made by hand' : ($a['trigger'] === 'cron' ? 'scheduled' : 'automatic'); ?></span>
+                        <span class="spacer"></span>
+                        <a class="btn small" href="/plugins/editor/editor-download.php?archive=<?php echo urlencode($a['name']); ?>">Download</a>
+                        <button class="btn small danger" type="button" onclick="swfDeleteBackup(<?php echo swf_e(json_encode($a['name'])); ?>, this)">Delete</button>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            </div>
+
+            <div class="panel">
+                <header><h2>Deleted pages</h2><span class="count"><?php echo count($trash); ?></span></header>
+                <?php if (!$trash): ?><div class="pad kv">Nothing in the trash. Pages deleted from the editor land here, with their history, until you restore or permanently delete them.</div><?php endif; ?>
+                <ul class="vlist">
+                <?php foreach ($trash as $t): ?>
+                    <li class="vhead">
+                        <span class="when"><?php echo swf_e($t['title']); ?></span>
+                        <span class="vmeta"><code>/<?php echo swf_e($t['page']); ?></code> &middot; deleted <?php echo date('D j M Y, g:i a', $t['time']); ?></span>
+                        <span class="spacer"></span>
+                        <button class="btn small" type="button" onclick="swfUntrash(<?php echo swf_e(json_encode($t['page'])); ?>, <?php echo swf_e(json_encode($t['stamp'])); ?>, this)">Restore</button>
+                        <button class="btn small danger" type="button" onclick="swfPurge(<?php echo swf_e(json_encode($t['page'])); ?>, <?php echo swf_e(json_encode($t['stamp'])); ?>, this)">Delete permanently</button>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+
     <?php elseif ($view === 'list'): ?>
         <?php $lists = swf_list_pages(); ?>
         <div class="wrap">
             <?php if (!empty($notFound)): ?>
                 <div class="notice err">No page called <code><?php echo swf_e($notFound); ?></code> exists.</div>
+            <?php endif; ?>
+            <?php if (isset($_GET['deleted'])): ?>
+                <div class="notice ok">Moved <code>/<?php echo swf_e($_GET['deleted']); ?></code> to the trash. You can bring it back from <a href="<?php echo swf_e(swf_editor_url(['backups' => 1])); ?>">Backups</a>.</div>
             <?php endif; ?>
             <?php if (isset($_GET['saved'])): ?>
                 <div class="notice ok">Created <code><?php echo swf_e($_GET['saved']); ?></code>.</div>
@@ -724,7 +890,14 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                 <div class="actions">
                     <button class="btn" type="button" onclick="swfSave()"><?php echo $isNew ? ($isPost ? 'Create post' : 'Create page') : 'Save'; ?></button>
                     <button class="btn secondary" type="button" onclick="swfPreview()">Preview</button>
-                    <?php if (!$isNew): ?><a class="btn secondary" href="/<?php echo swf_e($editName); ?>" target="_blank" rel="noopener">Open live &#8599;</a><?php endif; ?>
+                    <?php if (!$isNew): ?>
+                        <a class="btn secondary" href="/<?php echo swf_e($editName); ?>" target="_blank" rel="noopener">Open live &#8599;</a>
+                        <?php $vcount = count(backup_list_versions($editName)); ?>
+                        <a class="btn secondary" href="<?php echo swf_e(swf_editor_url(['history' => $editName])); ?>">History<?php echo $vcount ? ' (' . $vcount . ')' : ''; ?></a>
+                        <?php if (!in_array($editName, array('home', '404', 'navigation'), true) && strpos($editName, 'footer/') !== 0): ?>
+                        <button class="btn danger" type="button" onclick="swfDelete()" style="margin-left:auto;">Delete</button>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <span class="status" id="status"></span>
                 </div>
             </div>
@@ -757,6 +930,57 @@ function swfFilter(input, listId) {
     document.querySelectorAll('#' + listId + ' li[data-f]').forEach(function (li) {
         li.style.display = li.getAttribute('data-f').indexOf(q) !== -1 ? '' : 'none';
     });
+}
+
+function swfGeneric(data, btn, done) {
+    if (btn) { btn.disabled = true; }
+    data.csrf_token = SWF_CSRF;
+    var el = document.getElementById('status');
+    if (el) { el.textContent = 'Working…'; el.className = 'status'; }
+    jQuery.post(SWF_SAVE, data, function (r) {
+        if (el) { el.textContent = r.message || ''; el.className = 'status ' + (r.success ? 'ok' : 'err'); }
+        if (btn) { btn.disabled = false; }
+        if (r.success && done) { done(r); }
+    }, 'json').fail(function (x) {
+        var msg = 'Request failed.'; try { msg = JSON.parse(x.responseText).message || msg; } catch (e) {}
+        if (el) { el.textContent = msg; el.className = 'status err'; }
+        if (btn) { btn.disabled = false; }
+    });
+}
+
+function swfRestore(stamp, btn) {
+    if (!confirm('Restore this version? The current page is kept in the history, so you can come back to it.')) { return; }
+    swfGeneric({ action: 'restore', pagename: <?php echo json_encode($editName); ?>, stamp: stamp }, btn, function () { setTimeout(function () { window.location.reload(); }, 600); });
+}
+
+function swfDelete() {
+    if (!confirm('Move this page to the trash? It can be restored from the Backups screen.')) { return; }
+    swfGeneric({ action: 'delete', pagename: <?php echo json_encode($editName); ?> }, null, function () {
+        swfSavedSnapshot = null;
+        window.location.href = SWF_EDITOR + '?deleted=' + encodeURIComponent(<?php echo json_encode($editName); ?>);
+    });
+}
+
+function swfBackup(kind, btn) {
+    var el = document.getElementById('status'); if (el) { el.textContent = 'Building the ' + kind + ' backup… this can take a little while on a large site.'; el.className = 'status'; }
+    swfGeneric({ action: 'backup', kind: kind }, btn, function (r) {
+        window.location.href = '/plugins/editor/editor-download.php?archive=' + encodeURIComponent(r.name);
+        setTimeout(function () { window.location.reload(); }, 1500);
+    });
+}
+
+function swfDeleteBackup(name, btn) {
+    if (!confirm('Delete this backup?')) { return; }
+    swfGeneric({ action: 'deletebackup', name: name }, btn, function () { window.location.reload(); });
+}
+
+function swfUntrash(page, stamp, btn) {
+    swfGeneric({ action: 'untrash', pagename: page, stamp: stamp }, btn, function (r) { window.location.href = SWF_EDITOR + '?page=' + encodeURIComponent(r.pagename); });
+}
+
+function swfPurge(page, stamp, btn) {
+    if (!confirm('Permanently delete this page and its history? This cannot be undone.')) { return; }
+    swfGeneric({ action: 'purge', pagename: page, stamp: stamp }, btn, function () { window.location.reload(); });
 }
 
 function swfLogout() {
@@ -960,7 +1184,7 @@ function swfSave() {
             window.location.href = SWF_EDITOR + '?page=' + encodeURIComponent(r.pagename);
             return;
         }
-        swfStatus('Saved.', 'ok');
+        swfStatus(r.message || 'Saved.', 'ok');
         swfSavedSnapshot = JSON.stringify(swfFields());
         if (document.getElementById('preview').classList.contains('on')) { swfPreview(); }
     }, 'json').fail(function (x) {

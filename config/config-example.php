@@ -109,5 +109,24 @@
         $editorPasswordHash = ''; /* Paste your bcrypt hash here */
         $editorTotpSecret   = ''; /* Optional 2FA. Base32 only (A-Z, 2-7). Empty = off. See notes above. */
         $editorSessionTimeout = 1800; /* Session lifetime in seconds. Default: 1800 (30 minutes) */
+
+        /* ── Backups ────────────────────────────────────────────────────────────
+           The editor keeps a copy of every page before it saves over it, moves
+           deleted pages to a trash instead of removing them, and can build a
+           zip of the site (from the Backups screen, from cron, or by itself
+           once a week when you save). All of it is stored in $backupDir.
+
+           $backupDir is "backups" in the site root by default. The folder is
+           created with an .htaccess that denies all web access and an empty
+           index.html, and the site's own .htaccess refuses the path too. If
+           your server is not Apache, set this to a folder OUTSIDE the web
+           root (an absolute path) — that is the safest arrangement anywhere.
+
+           These settings are optional; leave them out and the defaults apply.
+        ── */
+        $backupDir          = 'backups'; /* Relative to the site root, or an absolute path */
+        $backupKeepVersions = 20;        /* Previous versions kept per page */
+        $backupKeepArchives = 7;         /* Automatic/scheduled site backups kept per kind. Ones you make by hand are never rotated out */
+        $backupAutoDays     = 7;         /* On save, make a content backup if the newest is older than this many days. 0 = off */
     }
 ?>

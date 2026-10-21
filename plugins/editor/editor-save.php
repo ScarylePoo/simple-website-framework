@@ -21,6 +21,7 @@ define('SWF_ROOT', str_replace('\\', '/', realpath(__DIR__ . '/../../')) . '/');
 
 require_once SWF_ROOT . 'config/config.php';
 require_once __DIR__ . '/editor-auth.php';
+require_once __DIR__ . '/editor-backup.php';
 
 define('SWF_EDITOR_PREVIEW_KEY', 'swf_editor_preview');
 
@@ -141,7 +142,19 @@ if ($action === 'save') {
         exit;
     }
 
-    if (file_put_contents($filePath, build_page_file($_POST, $content)) === false) {
+    $newFile = build_page_file($_POST, $content);
+
+    // Keep the previous version, unless nothing actually changed
+    $versioned = false;
+    if (file_get_contents($filePath) !== $newFile) {
+        $versioned = backup_version_page($pagename);
+        if ($versioned === false && backup_dir() === false) {
+            echo json_encode(['success' => false, 'message' => 'Not saved: the backup directory (' . backup_dir_label() . ') cannot be written, so the previous version could not be kept. Fix its permissions or set $backupDir in config.php.']);
+            exit;
+        }
+    }
+
+    if (file_put_contents($filePath, $newFile) === false) {
         echo json_encode(['success' => false, 'message' => 'Failed to write file. Check permissions.']);
         exit;
     }
@@ -149,7 +162,12 @@ if ($action === 'save') {
     editor_clear_cache($pagename);
     unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
 
-    echo json_encode(['success' => true, 'message' => 'Saved.']);
+    $auto = backup_maybe_auto();
+    $msg  = 'Saved.';
+    if (is_array($auto)) { $msg .= ' Weekly backup made (' . backup_fmt_size($auto['size']) . ').'; }
+    elseif (is_string($auto)) { $msg .= ' Weekly backup failed: ' . $auto; }
+
+    echo json_encode(['success' => true, 'message' => $msg, 'versioned' => (bool) $versioned]);
     exit;
 }
 
@@ -197,12 +215,117 @@ if ($action === 'new') {
 
     editor_clear_cache($pagename);
     unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+    backup_maybe_auto();
 
     echo json_encode([
         'success'  => true,
         'message'  => 'Page created.',
         'pagename' => $pagename
     ]);
+    exit;
+}
+
+// ── RESTORE A PREVIOUS VERSION ──────────────────────────────────────────────
+
+if ($action === 'restore') {
+    $pagename = trim($_POST['pagename'] ?? '');
+    $stamp    = trim($_POST['stamp'] ?? '');
+    $filePath = editor_validate_path($pagename, SWF_ROOT);
+    if ($filePath === false || !file_exists($filePath)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid or non-existent page path.']);
+        exit;
+    }
+    $pagename = strtolower(ltrim($pagename, '/.'));
+    if (!backup_restore_version($pagename, $stamp)) {
+        echo json_encode(['success' => false, 'message' => 'That version could not be restored.']);
+        exit;
+    }
+    editor_clear_cache($pagename);
+    unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+    echo json_encode(['success' => true, 'message' => 'Restored. The version you replaced was kept in the history.']);
+    exit;
+}
+
+// ── DELETE A PAGE (to the trash) ────────────────────────────────────────────
+
+/*
+    The theme cannot render without these three, so they cannot be deleted.
+*/
+$editorProtectedPages = array('home', '404', 'navigation');
+
+if ($action === 'delete') {
+    $pagename = trim($_POST['pagename'] ?? '');
+    $filePath = editor_validate_path($pagename, SWF_ROOT);
+    if ($filePath === false || !file_exists($filePath)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid or non-existent page path.']);
+        exit;
+    }
+    $pagename = strtolower(ltrim($pagename, '/.'));
+    if (in_array($pagename, $editorProtectedPages, true) || strpos($pagename, 'footer/') === 0) {
+        echo json_encode(['success' => false, 'message' => 'The site needs this page; it cannot be deleted. Edit it instead.']);
+        exit;
+    }
+    if (backup_dir() === false) {
+        echo json_encode(['success' => false, 'message' => 'Not deleted: the backup directory (' . backup_dir_label() . ') cannot be written, so the page could not be moved to the trash.']);
+        exit;
+    }
+    $stamp = backup_trash_page($pagename);
+    if ($stamp === false) {
+        echo json_encode(['success' => false, 'message' => 'The page could not be moved to the trash.']);
+        exit;
+    }
+    editor_clear_cache($pagename);
+    unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+    backup_maybe_auto();
+    echo json_encode(['success' => true, 'message' => 'Moved to the trash.', 'stamp' => $stamp]);
+    exit;
+}
+
+// ── TRASH: RESTORE OR PURGE ────────────────────────────────────────────────
+
+if ($action === 'untrash' || $action === 'purge') {
+    $pagename = strtolower(trim($_POST['pagename'] ?? ''));
+    $stamp    = trim($_POST['stamp'] ?? '');
+    // Same character rules as a page path; the file need not exist (it is in the trash)
+    $pagename = ltrim($pagename, '/.');
+    if (!preg_match('/^[a-z0-9\-_\/]+$/', $pagename) || strpos($pagename, '..') !== false) {
+        echo json_encode(['success' => false, 'message' => 'Invalid page name.']);
+        exit;
+    }
+    if ($action === 'purge') {
+        echo json_encode(backup_purge_trash($pagename, $stamp)
+            ? ['success' => true, 'message' => 'Deleted permanently.']
+            : ['success' => false, 'message' => 'Nothing to delete.']);
+        exit;
+    }
+    $r = backup_untrash_page($pagename, $stamp);
+    if ($r !== true) {
+        echo json_encode(['success' => false, 'message' => $r]);
+        exit;
+    }
+    editor_clear_all_cache();
+    echo json_encode(['success' => true, 'message' => 'Page restored.', 'pagename' => $pagename]);
+    exit;
+}
+
+// ── SITE BACKUP ARCHIVES ───────────────────────────────────────────────────
+
+if ($action === 'backup') {
+    $kind = $_POST['kind'] ?? 'content';
+    @set_time_limit(300);
+    $r = backup_make_archive($kind, 'manual');
+    if (!is_array($r)) {
+        echo json_encode(['success' => false, 'message' => $r]);
+        exit;
+    }
+    echo json_encode(['success' => true, 'message' => 'Backup made.', 'name' => $r['name'], 'size' => backup_fmt_size($r['size']), 'count' => $r['count']]);
+    exit;
+}
+
+if ($action === 'deletebackup') {
+    echo json_encode(backup_delete_archive($_POST['name'] ?? '')
+        ? ['success' => true, 'message' => 'Backup deleted.']
+        : ['success' => false, 'message' => 'That backup was not found.']);
     exit;
 }
 

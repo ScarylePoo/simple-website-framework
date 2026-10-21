@@ -1,0 +1,133 @@
+<!-- pagetitle: Versions, Trash and Backups -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 10/21/2026 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: How the editor keeps every version of a page, where deleted pages go, and how to back up and restore a whole site. -->
+<!-- pagekeywords: backups, versions, history, restore, undo, trash, delete, archive, zip, cron -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>Three things protect your content, and they nest: every save keeps the version before it; every delete goes to a trash rather than the bin; and the whole site can be zipped, by hand, on a schedule, or by itself once a week. None of it needs a database or anything beyond PHP. All of it lives in one folder that the web server refuses to serve.</p>
+
+<p>These features belong to the <a href="documentation/setup/editor">editor</a>, so they are available when <code>$editorEnabled</code> is <code>true</code>. The command-line backup works regardless.</p>
+
+<hr/>
+
+<h2>Where it all goes</h2>
+
+<p>Everything is stored under <code>$backupDir</code>, which is <code>backups/</code> in the site root unless you say otherwise:</p>
+
+<pre>
+backups/
+  .htaccess                          denies all web access
+  index.html                         empty, so a listing shows nothing
+  versions/&lt;page&gt;/&lt;timestamp&gt;.html   earlier versions of each page
+  trash/&lt;page&gt;/&lt;timestamp&gt;.html      pages you deleted (with their versions)
+  archives/swf-&lt;kind&gt;-&lt;timestamp&gt;-&lt;how&gt;.zip   site backups
+</pre>
+
+<p>The folder is created the first time it is needed, with the two protection files already in place, and they are put back on every run if something removes them. The site's own <code>.htaccess</code> also answers 404 for anything under <code>backups/</code>, so there are two locks. The only way to get a file out is the editor's own download link, logged in.</p>
+
+<p><strong>If your server is not Apache</strong> (or LiteSpeed, which honours <code>.htaccess</code>), those locks do nothing. Set <code>$backupDir</code> to an absolute path outside the web root instead:</p>
+
+<pre>
+$backupDir = '/home/yourname/site-backups';
+</pre>
+
+<p>That is the safest arrangement on any server, and the Backups screen will tell you it is in use. The folder must be writable by the user PHP runs as.</p>
+
+<hr/>
+
+<h2>Page versions</h2>
+
+<p>When you save a page in the editor, the file as it was <em>before</em> the save is copied into <code>versions/</code> first. Saving with no changes keeps nothing. The newest <code>$backupKeepVersions</code> copies (20 by default) are kept per page; older ones are dropped as new ones arrive.</p>
+
+<p><strong>History</strong> on the edit screen lists them, newest first. Each entry can show what changed between that version and the page as it is now, line by line, with unchanged stretches folded. <strong>View</strong> opens the old file as plain text. <strong>Restore</strong> puts it back as the live page; the page you replaced is kept in the history first, so a restore is itself undoable.</p>
+
+<p>If the backup folder cannot be written, the editor refuses to save at all rather than save without keeping the previous version, and tells you which folder to fix.</p>
+
+<hr/>
+
+<h2>Deleting pages</h2>
+
+<p><strong>Delete</strong> on the edit screen moves the page to <code>trash/</code> together with its version history, and removes any folder in <code>pages/</code> that is left empty. Nothing is destroyed. Three pages cannot be deleted because the theme needs them, <code>home</code>, <code>404</code> and <code>navigation</code>, and neither can the footer columns.</p>
+
+<p>Deleted pages are listed on the <strong>Backups</strong> screen. <strong>Restore</strong> puts one back, history included, and opens it for editing. It will refuse if a new page with the same address has been created since. <strong>Delete permanently</strong> removes it from the trash for good.</p>
+
+<hr/>
+
+<h2>Site backups</h2>
+
+<p>There are two kinds, and the difference is the same split the <a href="documentation/setup/installation">upgrade package</a> uses:</p>
+
+<ul>
+    <li><strong>Content</strong> &mdash; everything that is yours and nothing that is the framework's: <code>pages/</code>, <code>images/</code>, your theme folders, <code>config/config.php</code>, <code>robots.txt</code>, <code>.htaccess</code>, and any other folder you have added to the site root. This is the one to keep. It is small, and it restores onto any version of the framework: unzip it over a working install and replace files when asked.</li>
+    <li><strong>Full</strong> &mdash; the complete site, framework included. Bigger, and the framework part can always be downloaded again, but it is one file that is the whole site. Unzip it into an empty web root to recreate the site exactly.</li>
+</ul>
+
+<p>Neither includes the backup folder itself, cache files, or the editor's own state files. Both include <code>config/config.php</code>, which holds your editor password hash and, if set, the two-factor secret, so treat a downloaded backup with the same care as the site.</p>
+
+<p>The file name says what it is and how it was made: <code>swf-content-20261021-031500-manual.zip</code> was a content backup made by hand; <code>-auto</code> means the weekly one, <code>-cron</code> a scheduled run. Each zip also contains a short <code>BACKUP.txt</code> saying the same.</p>
+
+<h3>By hand</h3>
+
+<p>Open <strong>Backups</strong> from the editor toolbar and click <strong>Make content backup</strong> or <strong>Make full backup</strong>. The zip is built, kept in <code>archives/</code>, and downloaded. Backups you make this way are never removed automatically; delete them from the same screen when you no longer want them.</p>
+
+<h3>Once a week, by itself</h3>
+
+<p>Every time a page is saved or deleted, the editor checks whether there is a content backup newer than <code>$backupAutoDays</code> days (7 by default). If there is not, it makes one before reporting the save, and says so in the status line. You never have to remember. Nothing happens if nobody edits the site, which is fine, because then nothing has changed since the last one. Set <code>$backupAutoDays = 0</code> to switch this off.</p>
+
+<h3>On a schedule</h3>
+
+<p>For backups on a timetable regardless of editing, run the command-line script from your host's cron:</p>
+
+<pre>
+php /path/to/your/site/plugins/editor/backup-cli.php content
+</pre>
+
+<p>A nightly content backup at 3:15 is this crontab line:</p>
+
+<pre>
+15 3 * * * php /path/to/your/site/plugins/editor/backup-cli.php content
+</pre>
+
+<p>Most hosting control panels have a page for cron jobs that takes the same command. Use <code>full</code> instead of <code>content</code> for a full-site backup, and <code>list</code> to see what is stored. The script only runs from the command line; requested over the web it answers 404.</p>
+
+<h3>Rotation</h3>
+
+<p>Automatic and scheduled backups are rotated so they cannot fill the disk: the newest <code>$backupKeepArchives</code> of each kind (7 by default) are kept. Backups made by hand are never rotated. With the defaults and a nightly cron, that is a rolling week of content backups.</p>
+
+<p>If the zip extension is missing from your PHP, the Backups screen says so. Page versions and the trash still work without it; only the zips need it.</p>
+
+<hr/>
+
+<h2>Restoring a whole site</h2>
+
+<p>Deliberately, this is not a button. A page you restore from inside the editor is one file in <code>pages/</code>; a whole-site restore means replacing code, and the editor should not be able to overwrite its own code from an upload. So it works the same way as an upgrade:</p>
+
+<ol>
+    <li>Download the backup you want from the Backups screen, or copy it off the server.</li>
+    <li>For a <strong>content</strong> backup: make sure a working framework install is in place (a fresh <code>swf-install</code> zip is fine), then unzip the backup over it, replacing files.</li>
+    <li>For a <strong>full</strong> backup: unzip it into the web root, replacing files, or into an empty one.</li>
+    <li>Delete any <code>cached-*.html</code> files in the site root.</li>
+</ol>
+
+<p>Keep a copy of your backups somewhere that is not the server. A backup that only exists on the machine it is backing up is a convenience, not a safeguard.</p>
+
+<hr/>
+
+<h2>Settings</h2>
+
+<p>All optional; an older <code>config.php</code> without them gets these defaults.</p>
+
+<table>
+    <thead>
+        <tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>$backupDir</code></td><td><code>'backups'</code></td><td>Where everything is stored. Relative to the site root, or an absolute path (recommended outside the web root on non-Apache servers).</td></tr>
+        <tr><td><code>$backupKeepVersions</code></td><td><code>20</code></td><td>Earlier versions kept per page.</td></tr>
+        <tr><td><code>$backupKeepArchives</code></td><td><code>7</code></td><td>Automatic and scheduled site backups kept, per kind. Manual ones are never rotated.</td></tr>
+        <tr><td><code>$backupAutoDays</code></td><td><code>7</code></td><td>On save, make a content backup if the newest is older than this. <code>0</code> switches the weekly backup off.</td></tr>
+    </tbody>
+</table>
