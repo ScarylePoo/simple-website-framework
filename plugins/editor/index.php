@@ -566,6 +566,26 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
 .mkdir { display: flex; gap: 8px; align-items: center; }
 .mkdir input { padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 0.88rem; width: 200px; }
 
+/* file picker dialog */
+.picker-back { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.picker-back.on { display: flex; }
+.picker { background: var(--bg); border-radius: 8px; width: min(960px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.picker .bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); border-radius: 8px 8px 0 0; flex-wrap: wrap; }
+.picker .bar h2 { font-size: 1rem; margin: 0; }
+.picker .bar .spacer { flex: 1; }
+.picker .crumbs { padding: 10px 16px 0; }
+.picker .body { overflow: auto; flex: 1; }
+.picker .filegrid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.picker .tile { cursor: pointer; }
+.picker .tile:hover { border-color: var(--accent); }
+.picker .tile .info { padding: 6px 8px; }
+.picker .foot { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel); border-radius: 0 0 8px 8px; font-size: 0.85rem; color: var(--muted); flex-wrap: wrap; }
+.picker .foot input[type=file] { display: none; }
+.picker .empty { padding: 30px; text-align: center; color: var(--muted); }
+.with-choose { display: flex; gap: 8px; }
+.with-choose input { flex: 1; min-width: 0; }
+.note-btn.swf-files-btn { font-size: 0.8rem; }
+
 @media (max-width: 860px) {
     .lists, .editor-grid.previewing { grid-template-columns: 1fr; }
     .meta { grid-template-columns: 1fr; }
@@ -979,7 +999,10 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                     </div>
                     <div class="full">
                         <label>Image <small>(path relative to the site root)</small></label>
-                        <input type="text" id="f-pageimage" value="<?php echo swf_e($m['pageimage']); ?>" placeholder="pages/posts/images/my-image.webp">
+                        <div class="with-choose">
+                            <input type="text" id="f-pageimage" value="<?php echo swf_e($m['pageimage']); ?>" placeholder="pages/posts/images/my-image.webp">
+                            <button class="btn small secondary" type="button" onclick="swfPickerOpen(function (p) { document.getElementById('f-pageimage').value = p; }, true)">Choose…</button>
+                        </div>
                     </div>
                     <div class="full">
                         <label>Excerpt <small>(about 160 characters; posts need one to appear in archives)</small></label>
@@ -1044,6 +1067,26 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                         <?php endif; ?>
                     <?php endif; ?>
                     <span class="status" id="status"></span>
+                </div>
+            </div>
+
+            <div class="picker-back" id="picker" onclick="if (event.target === this) swfPickerClose()">
+                <div class="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+                    <div class="bar">
+                        <h2 id="picker-title">Choose a file</h2>
+                        <label style="font-size:0.85rem;color:var(--muted);display:inline-flex;gap:6px;align-items:center;"><input type="checkbox" id="picker-all" onchange="swfPickerLoad(swfPickerDir)"> show all files, not just images</label>
+                        <span class="spacer"></span>
+                        <button class="btn small secondary" type="button" onclick="swfPickerClose()">Close</button>
+                    </div>
+                    <div class="crumbs" id="picker-crumbs"></div>
+                    <div class="body" id="picker-body"><div class="empty">Loading…</div></div>
+                    <div class="foot">
+                        <label class="btn small" for="picker-upload">Upload new…</label>
+                        <input type="file" id="picker-upload" multiple onchange="swfPickerUpload(this.files)">
+                        <span id="picker-status">Click a file to insert it. Uploads go into the folder you are looking at.</span>
+                        <span class="spacer"></span>
+                        <a href="<?php echo swf_e(swf_editor_url(['files' => 1])); ?>" target="_blank" rel="noopener">Open the Files screen &#8599;</a>
+                    </div>
                 </div>
             </div>
 
@@ -1216,6 +1259,77 @@ function swfIsMarkdownLayout() {
     editor would turn the markdown into HTML. Everything else gets Summernote.
     Switching layouts moves the content across untouched.
 */
+/*
+    File picker. One dialog, two users: the Files toolbar button in the
+    content editor and the Choose… button beside the Image field. Each
+    passes a callback that receives the chosen path.
+*/
+var swfPickerCb = null, swfPickerDir = SWF_UPLOAD_DIR, swfPickerImagesOnly = true;
+
+function swfPickerOpen(cb, imagesOnly) {
+    swfPickerCb = cb; swfPickerImagesOnly = !!imagesOnly;
+    jQuery('.note-tooltip').hide(); // the dialog steals the mouse-leave that would hide it
+    document.getElementById('picker-all').checked = !imagesOnly;
+    document.getElementById('picker').classList.add('on');
+    swfPickerLoad(swfPickerDir);
+}
+
+function swfPickerClose() {
+    document.getElementById('picker').classList.remove('on');
+    swfPickerCb = null;
+}
+
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('picker').classList.contains('on')) { swfPickerClose(); } });
+
+function swfPickerChoose(path, name) {
+    var cb = swfPickerCb; swfPickerClose();
+    if (cb) { cb(path, name); }
+}
+
+function swfPickerLoad(dir) {
+    var body = document.getElementById('picker-body');
+    body.innerHTML = '<div class="empty">Loading…</div>';
+    jQuery.post(SWF_SAVE, { action: 'listfiles', csrf_token: SWF_CSRF, dir: dir }, function (r) {
+        if (!r.success) { body.innerHTML = '<div class="empty">' + swfEsc(r.message) + '</div>'; return; }
+        swfPickerDir = r.dir;
+        var showAll = document.getElementById('picker-all').checked;
+        // crumbs: the roots, then the path inside the current root
+        var c = '';
+        r.roots.forEach(function (root) {
+            var on = r.dir === root || r.dir.indexOf(root + '/') === 0;
+            c += '<a href="#" class="' + (on ? 'on' : '') + '" onclick="swfPickerLoad(' + swfEsc(JSON.stringify(root)).replace(/&quot;/g, '&quot;') + ');return false;">' + swfEsc(root) + '/</a>';
+        });
+        if (r.parent !== '' && r.roots.indexOf(r.dir) === -1) {
+            c += '<span class="sep">&rsaquo;</span><a href="#" class="on" onclick="swfPickerLoad(' + swfEsc(JSON.stringify(r.parent)) + ');return false;">&larr; up</a><span class="sep">' + swfEsc(r.dir) + '/</span>';
+        }
+        document.getElementById('picker-crumbs').innerHTML = c;
+        var h = '', n = 0;
+        r.folders.forEach(function (f) {
+            h += '<div class="tile folder" onclick="swfPickerLoad(' + swfEsc(JSON.stringify(f.path)) + ')"><div class="thumb"><span class="ext">folder</span></div><div class="info"><div class="n">' + swfEsc(f.name) + '/</div><div class="m">' + f.count + ' item' + (f.count === 1 ? '' : 's') + '</div></div></div>';
+        });
+        r.files.forEach(function (f) {
+            if (!showAll && !f.image) { return; }
+            n++;
+            var thumb = f.image ? '<img src="/' + swfEsc(f.path) + '?v=' + f.mtime + '" alt="" loading="lazy">' : '<span class="ext">' + swfEsc(f.ext) + '</span>';
+            h += '<div class="tile" title="' + swfEsc(f.path) + '" onclick="swfPickerChoose(' + swfEsc(JSON.stringify(f.path)) + ', ' + swfEsc(JSON.stringify(f.name)) + ')"><div class="thumb">' + thumb + '</div><div class="info"><div class="n">' + swfEsc(f.name) + '</div></div></div>';
+        });
+        body.innerHTML = h ? '<div class="filegrid">' + h + '</div>' : '<div class="empty">' + (showAll ? 'Nothing in this folder yet.' : 'No images in this folder yet.') + ' Use <strong>Upload new…</strong> below.</div>';
+    }, 'json').fail(function () { body.innerHTML = '<div class="empty">Could not load the folder.</div>'; });
+}
+
+function swfPickerUpload(fileList) {
+    if (!fileList || !fileList.length) { return; }
+    var st = document.getElementById('picker-status'); st.textContent = 'Uploading…';
+    swfUploadTo(swfPickerDir, fileList, false, function (r) {
+        var bad = (r.results || []).filter(function (x) { return !x.ok; });
+        st.textContent = r.success ? ((r.results.length - bad.length) + ' uploaded.' + (bad.length ? ' ' + bad.map(function (x) { return x.name + ': ' + x.message; }).join(' ') : '')) : (r.message || 'Upload failed.');
+        document.getElementById('picker-upload').value = '';
+        // One image chosen for an image field: insert it straight away
+        if (r.success && r.results.length === 1 && r.results[0].ok && swfPickerCb) { swfPickerChoose(r.results[0].path, r.results[0].name); return; }
+        swfPickerLoad(swfPickerDir);
+    });
+}
+
 function swfSetMode(mode) {
     if (mode === swfMode) { return; }
     var current = swfGetContent();
@@ -1230,9 +1344,34 @@ function swfSetMode(mode) {
                     ['style',  ['style']],
                     ['font',   ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
                     ['para',   ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link', 'picture', 'hr', 'table']],
+                    ['insert', ['link', 'picture', 'swffiles', 'hr', 'table']],
                     ['misc',   ['codeview', 'fullscreen']]
                 ],
+                buttons: {
+                    /*
+                        "Files": insert an image that is already on the server.
+                        Opens the same picker as the Image field; the chosen
+                        path is inserted where the cursor was.
+                    */
+                    swffiles: function (context) {
+                        return jQuery.summernote.ui.button({
+                            className: 'swf-files-btn',
+                            contents: '<i class="note-icon-picture"></i> Files',
+                            tooltip: 'Insert an image already uploaded to the site',
+                            // Summernote Lite positions a button's tooltip relative to this;
+                            // built-in buttons get it automatically, custom ones must pass it
+                            container: context.options.container,
+                            click: function () {
+                                context.invoke('editor.saveRange');
+                                swfPickerOpen(function (path, name) {
+                                    context.invoke('editor.restoreRange');
+                                    context.invoke('editor.focus');
+                                    context.invoke('editor.insertImage', path, name);
+                                }, true);
+                            }
+                        }).render();
+                    }
+                },
                 callbacks: {
                     /*
                         Summernote's default is to embed a picked image as a

@@ -353,6 +353,30 @@ if ($action === 'upload') {
     exit;
 }
 
+// Listing for the file picker dialog in the page editor
+if ($action === 'listfiles') {
+    $dir = files_validate_dir($_POST['dir'] ?? '');
+    if ($dir === false) {
+        $roots = files_upload_dirs();
+        $dir = $roots ? $roots[0] : false;
+    }
+    if ($dir === false) {
+        echo json_encode(['success' => false, 'message' => 'No upload folders are configured.']);
+        exit;
+    }
+    $l = files_list($dir);
+    $parent = strpos($dir, '/') !== false ? dirname($dir) : '';
+    echo json_encode([
+        'success' => true,
+        'dir'     => $dir,
+        'parent'  => files_validate_dir($parent) !== false ? $parent : '',
+        'roots'   => files_upload_dirs(),
+        'folders' => $l['folders'],
+        'files'   => array_map(function ($f) { return ['name' => $f['name'], 'path' => $f['path'], 'size' => $f['size'], 'mtime' => $f['mtime'], 'image' => $f['image'], 'ext' => $f['ext']]; }, $l['files']),
+    ]);
+    exit;
+}
+
 if ($action === 'mkdir') {
     $r = files_make_dir($_POST['dir'] ?? '', $_POST['name'] ?? '');
     echo json_encode(strpos($r, '/') !== false && file_exists(SWF_ROOT . $r)

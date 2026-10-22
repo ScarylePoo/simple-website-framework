@@ -28,6 +28,16 @@
 
 <hr/>
 
+<h2>Putting a file into a page</h2>
+
+<p>Once a file is on the server there are three ways to use it, from quickest to most manual:</p>
+
+<ul>
+    <li><strong>The Files button in the content editor's toolbar</strong> (next to the picture button). It opens a dialog showing the same folders and thumbnails as the Files screen; click an image and it is inserted where the cursor was. Tick <em>show all files</em> to insert a link to a PDF or other non-image. <strong>Upload new&hellip;</strong> at the bottom uploads into the folder you are looking at without leaving the page.</li>
+    <li><strong>Choose&hellip;</strong> beside the Image field, for the page's share and archive image. Same dialog; the chosen path goes into the field. Uploading a single new file here fills the field straight away.</li>
+    <li><strong>Copy path</strong> on the Files screen, then paste it wherever you need it &mdash; into the code view, or an <code>&lt;img src="&hellip;"&gt;</code> in a Markdown page.</li>
+</ul>
+
 <h2>The picture button</h2>
 
 <p>In the content editor, the picture button's default behaviour (from the Summernote library it uses) is to embed the image inside the page as a huge block of text, which makes the page file enormous and the image uncacheable. The editor overrides that: the image is uploaded and its path inserted instead. Posts upload to <code>pages/posts/images/</code>, pages to <code>pages/images/</code>, and the status line says where it went.</p>
