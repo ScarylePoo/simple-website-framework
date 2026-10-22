@@ -93,6 +93,31 @@ function build_page_file($fields, $content) {
 }
 
 /*
+    Settle the address of a new page. If the address is missing, or is only a
+    folder prefix ("posts/" with nothing after it — the new-post form prefills
+    that), the page's own name is derived from its title: "Shields That React"
+    becomes "shields-that-react", under the prefix if there was one. A page
+    with neither an address nor a title is refused rather than guessed at.
+    Returns the address, or a string starting with "!" carrying the error.
+*/
+function editor_settle_new_address($address, $title) {
+    $address = trim(str_replace('\\', '/', (string) $address));
+    $slug = strtolower(trim((string) $title));
+    $slug = trim(preg_replace('/[^a-z0-9]+/', '-', $slug), '-');
+    if (strlen($slug) > 80) { $slug = rtrim(substr($slug, 0, 80), '-'); }
+
+    $bareFolder = $address === '' || substr($address, -1) === '/';
+    if ($bareFolder) {
+        if ($slug === '') {
+            return '!Give the page a title or an address first; the address is made from the title when it is left blank.';
+        }
+        $address = rtrim($address, '/');
+        $address = $address === '' ? $slug : $address . '/' . $slug;
+    }
+    return $address;
+}
+
+/*
     Cache invalidation.
 
     required/top-cache.php names cache files after the LAST segment of the URL
@@ -178,15 +203,11 @@ if ($action === 'new') {
     $pagename = trim($_POST['pagename'] ?? '');
     $content  = $_POST['content'] ?? '';
 
-    if (empty($pagename)) {
-        echo json_encode(['success' => false, 'message' => 'No page name provided.']);
-        exit;
-    }
-
-    // "posts/" with nothing after it would make a PAGE called /posts, which is
-    // never what was meant (the new-post form prefills "posts/").
-    if (substr(rtrim($pagename), -1) === '/') {
-        echo json_encode(['success' => false, 'message' => 'The address ends with a slash. Add the page\'s own name after it, for example ' . rtrim($pagename) . 'my-first-post.']);
+    // No address, or only "posts/": make one from the title rather than
+    // creating a page literally called /posts (which is what once happened).
+    $pagename = editor_settle_new_address($pagename, $_POST['pagetitle'] ?? '');
+    if ($pagename[0] === '!') {
+        echo json_encode(['success' => false, 'message' => substr($pagename, 1)]);
         exit;
     }
 
@@ -438,6 +459,11 @@ if ($action === 'preview') {
     $isNew    = !empty($_POST['is_new']);
 
     if ($isNew) {
+        $pagename = editor_settle_new_address($pagename, $_POST['pagetitle'] ?? '');
+        if ($pagename[0] === '!') {
+            echo json_encode(['success' => false, 'message' => substr($pagename, 1)]);
+            exit;
+        }
         $pagename = editor_validate_new_pagename($pagename, SWF_ROOT);
         if ($pagename === false) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid page name before previewing.']);

@@ -968,12 +968,13 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                     <?php if ($isNew): ?>
                     <div class="full">
                         <label>Address <small>(lowercase letters, numbers and hyphens; use / for folders)</small></label>
-                        <input type="text" id="f-pagename" placeholder="<?php echo $isPost ? 'posts/my-first-post' : 'about-us  or  docs/getting-started'; ?>" value="<?php echo $isPost ? 'posts/' : ($newArchiveFor !== '' ? swf_e(preg_replace('/[^a-z0-9]+/', '-', $newArchiveFor)) : ''); ?>" autofocus>
+                        <input type="text" id="f-pagename" placeholder="<?php echo $isPost ? 'posts/my-first-post' : 'about-us  or  docs/getting-started'; ?>" value="<?php echo $isPost ? 'posts/' : ($newArchiveFor !== '' ? swf_e(preg_replace('/[^a-z0-9]+/', '-', $newArchiveFor)) : ''); ?>" oninput="swfAddressTouched = true" autofocus>
+                        <div class="kv" id="address-hint" style="margin-top:4px;"></div>
                     </div>
                     <?php endif; ?>
                     <div class="full">
                         <label>Title</label>
-                        <input type="text" id="f-pagetitle" value="<?php echo swf_e($m['pagetitle']); ?>">
+                        <input type="text" id="f-pagetitle" value="<?php echo swf_e($m['pagetitle']); ?>"<?php echo $isNew ? ' oninput="swfAddressFromTitle()"' : ''; ?>>
                     </div>
                     <div>
                         <label>Layout</label>
@@ -1246,6 +1247,27 @@ function swfLogout() {
 
 <?php if ($view === 'form'): ?>
 var SWF_IS_NEW   = <?php echo $isNew ? 'true' : 'false'; ?>;
+
+/*
+    The address follows the title until the address is edited by hand.
+    "Shields That React" -> posts/shields-that-react. The server does the same
+    derivation if the address still arrives empty or as a bare folder, so a
+    post can never again be saved as a page called /posts.
+*/
+var swfAddressTouched = false;
+var SWF_ADDRESS_PREFIX = <?php echo json_encode($isNew && $isPost ? 'posts/' : ''); ?>;
+function swfSlug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, ''); }
+function swfAddressFromTitle() {
+    if (!SWF_IS_NEW) { return; }
+    var addr = document.getElementById('f-pagename');
+    var cur = addr.value.trim();
+    // Only while the field is untouched, or still just the prefix
+    if (swfAddressTouched && cur !== '' && cur !== SWF_ADDRESS_PREFIX) { return; }
+    var slug = swfSlug(document.getElementById('f-pagetitle').value);
+    addr.value = slug ? SWF_ADDRESS_PREFIX + slug : SWF_ADDRESS_PREFIX;
+    swfAddressTouched = false;
+    document.getElementById('address-hint').textContent = slug ? 'Made from the title; edit it if you want something else.' : '';
+}
 var SWF_UPLOAD_DIR = <?php echo json_encode($isPost && files_validate_dir('pages/posts/images') !== false ? 'pages/posts/images' : (files_validate_dir('pages/images') !== false ? 'pages/images' : (files_upload_dirs() ? files_upload_dirs()[0] : ''))); ?>;
 var SWF_PAGENAME = <?php echo json_encode($editName); ?>;
 var SWF_BODY     = <?php echo json_encode($page['body']); ?>;
@@ -1545,7 +1567,7 @@ function swfStatus(msg, cls) {
 
 function swfSave() {
     var f = swfFields();
-    if (SWF_IS_NEW && !f.pagename) { swfStatus('Enter an address for the page first.', 'err'); return; }
+    if (SWF_IS_NEW && !f.pagename && !f.pagetitle.trim()) { swfStatus('Give the page a title or an address first.', 'err'); return; }
     f.action = SWF_IS_NEW ? 'new' : 'save';
     swfStatus('Saving…');
     jQuery.post(SWF_SAVE, f, function (r) {
@@ -1577,7 +1599,7 @@ function swfSave() {
 function swfPreview() {
     var f = swfFields();
     f.action = 'preview';
-    if (SWF_IS_NEW && !f.pagename) { swfStatus('Enter an address for the page before previewing.', 'err'); return; }
+    if (SWF_IS_NEW && !f.pagename && !f.pagetitle.trim()) { swfStatus('Give the page a title or an address before previewing.', 'err'); return; }
     swfStatus('Rendering preview…');
     jQuery.post(SWF_SAVE, f, function (r) {
         if (!r.success) { swfStatus(r.message, 'err'); return; }
