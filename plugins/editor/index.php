@@ -198,7 +198,7 @@ $themeName  = $theme ?? 'starter';
 function swf_theme_preview_blockers($themeName) {
     $out = array();
     // Only the page layouts: header.php legitimately builds the path for filemtime()
-    foreach (glob(SWF_ROOT . 'themes/' . $themeName . '/page-*.php') as $f) {
+    foreach (glob(SWF_ROOT . 'themes/' . $themeName . '/page*.php') as $f) {
         $src = @file_get_contents($f);
         if ($src === false) { continue; }
         // Any construction of the current page's own path, however it is then read
