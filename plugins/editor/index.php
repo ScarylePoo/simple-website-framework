@@ -235,9 +235,14 @@ $typeOptions = array('website', 'article', 'blog', 'profile', 'video', 'music', 
 */
 $swfMetaKeys = array('pagetitle', 'pagelayout', 'pagedate', 'pageimage', 'pageexcerpt', 'pagekeywords', 'pageauthor', 'pagetype', 'pagecategory', 'postcategory');
 
-function swf_read_page($pagename) {
+function swf_draft_file($pagename) { return SWF_ROOT . 'pages/' . $pagename . '.html.draft'; }
+function swf_has_draft($pagename)  { return file_exists(swf_draft_file($pagename)); }
+function swf_is_live($pagename)    { return file_exists(SWF_ROOT . 'pages/' . $pagename . '.html'); }
+
+function swf_read_page($pagename, $preferDraft = false) {
     global $swfMetaKeys;
     $file = SWF_ROOT . 'pages/' . $pagename . '.html';
+    if ($preferDraft && swf_has_draft($pagename)) { $file = swf_draft_file($pagename); }
     $raw  = file_exists($file) ? file_get_contents($file) : '';
     $raw  = str_replace("\r\n", "\n", $raw);
 
@@ -273,12 +278,17 @@ function swf_list_pages() {
     $pages = array();
     $posts = array();
     foreach ($it as $f) {
-        if (!$f->isFile() || strtolower($f->getExtension()) !== 'html') { continue; }
+        if (!$f->isFile()) { continue; }
         $rel  = str_replace('\\', '/', substr($f->getPathname(), strlen($pagesDir) + 1));
-        $name = substr($rel, 0, -5);
-        $info = swf_read_page($name);
+        $isDraftFile = substr($rel, -11) === '.html.draft';
+        if (!$isDraftFile && strtolower($f->getExtension()) !== 'html') { continue; }
+        $name = $isDraftFile ? substr($rel, 0, -11) : substr($rel, 0, -5);
+        // A live page with a draft beside it is listed once, from its live file, flagged
+        if ($isDraftFile && swf_is_live($name)) { continue; }
+        $info = swf_read_page($name, $isDraftFile);
         $entry = array(
             'name'   => $name,
+            'draft'  => $isDraftFile ? 'unpublished' : (swf_has_draft($name) ? 'changes' : ''),
             'title'  => $info['meta']['pagetitle'] !== '' ? $info['meta']['pagetitle'] : $name,
             'date'   => $info['meta']['pagedate'],
             'layout' => $info['meta']['pagelayout'],
@@ -368,9 +378,9 @@ if ($isAuthed) {
     } elseif (isset($_GET['page'])) {
         $candidate = trim($_GET['page']);
         $path = editor_validate_path($candidate, SWF_ROOT);
-        if ($path !== false && file_exists($path)) {
+        if ($path !== false && (file_exists($path) || swf_has_draft(strtolower(ltrim($candidate, '/.'))))) {
             $view     = 'form';
-            $editName = ltrim($candidate, '/.');
+            $editName = strtolower(ltrim($candidate, '/.'));
         } else {
             $view = 'list';
             $notFound = $candidate;
@@ -406,10 +416,12 @@ if ($view === 'form') {
             }
         }
     } else {
-        $page = swf_read_page($editName);
+        $page = swf_read_page($editName, true);   // the draft, when one exists
         if ($page['meta']['pageauthor'] === '') { $page['meta']['pageauthor'] = $siteAuthor; }
     }
     $isPost = $isNew ? ($newKind === 'post') : (strpos($editName, 'posts/') === 0);
+    $hasDraft = !$isNew && swf_has_draft($editName);
+    $isLive   = !$isNew && swf_is_live($editName);
     $layoutOptions = swf_layout_options($themeName, $page['meta']['pagelayout']);
     $categories    = swf_categories(swf_list_pages());
     $pageCats      = swf_split_categories($page['meta']['pagecategory']);
@@ -555,6 +567,11 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .panel .pad p { margin: 0 0 10px; }
 .panel .pad p:last-child { margin-bottom: 0; }
 .kv { color: var(--muted); font-size: 0.88rem; }
+.badge { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-ink); vertical-align: 2px; }
+.badge.soft { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.notice.draft { border-color: #e6c766; background: var(--warn-bg); color: var(--warn-ink); }
+.notice.restore { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.notice.restore .spacer { flex: 1; }
 
 /* files */
 .crumbs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.92rem; }
@@ -915,7 +932,7 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                         <?php foreach ($lists['pages'] as $p): ?>
                         <li data-f="<?php echo swf_e(strtolower($p['title'] . ' ' . $p['name'])); ?>">
                             <a href="<?php echo swf_e(swf_editor_url(['page' => $p['name']])); ?>">
-                                <div class="t"><?php echo swf_e($p['title']); ?></div>
+                                <div class="t"><?php echo swf_e($p['title']); ?><?php if ($p['draft'] === 'unpublished'): ?> <span class="badge">Draft</span><?php elseif ($p['draft'] === 'changes'): ?> <span class="badge soft">Unpublished changes</span><?php endif; ?></div>
                                 <div class="m"><code>/<?php echo swf_e($p['name']); ?></code>
                                     <?php if (strpos($p['layout'], 'postarchives') === 0): ?>
                                         <span><?php echo $p['filter'] === '' ? 'Lists all posts' : 'Lists posts in <em>' . swf_e($p['filter']) . '</em>'; ?></span>
@@ -940,7 +957,7 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                         <?php foreach ($lists['posts'] as $p): ?>
                         <li data-f="<?php echo swf_e(strtolower($p['title'] . ' ' . $p['name'] . ' ' . $p['cats'])); ?>">
                             <a href="<?php echo swf_e(swf_editor_url(['page' => $p['name']])); ?>">
-                                <div class="t"><?php echo swf_e($p['title']); ?></div>
+                                <div class="t"><?php echo swf_e($p['title']); ?><?php if ($p['draft'] === 'unpublished'): ?> <span class="badge">Draft</span><?php elseif ($p['draft'] === 'changes'): ?> <span class="badge soft">Unpublished changes</span><?php endif; ?></div>
                                 <div class="m">
                                     <?php if ($p['date'] !== ''): ?><span><?php echo swf_e($p['date']); ?></span><?php endif; ?>
                                     <code>/<?php echo swf_e($p['name']); ?></code>
@@ -959,10 +976,25 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
         <div class="wrap">
             <div class="formhead">
                 <a class="btn small secondary" href="<?php echo swf_e(swf_editor_url()); ?>">&larr; All pages</a>
-                <h1><?php echo $isNew ? ($isPost ? 'New post' : 'New page') : swf_e($m['pagetitle'] !== '' ? $m['pagetitle'] : $editName); ?></h1>
+                <h1><?php echo $isNew ? ($isPost ? 'New post' : 'New page') : swf_e($m['pagetitle'] !== '' ? $m['pagetitle'] : $editName); ?><?php if (!$isNew && $hasDraft): ?> <span class="badge"><?php echo $isLive ? 'Unpublished changes' : 'Draft'; ?></span><?php endif; ?></h1>
                 <?php if (!$isNew): ?><span class="path"><code>pages/<?php echo swf_e($editName); ?>.html</code></span><?php endif; ?>
             </div>
 
+            <?php if (!$isNew && $hasDraft): ?>
+                <div class="notice draft">
+                    <?php if ($isLive): ?>
+                        <strong>You are editing a draft.</strong> Visitors still see the published page. <strong>Publish</strong> replaces it with this draft (the published version is kept in History); <strong>Discard draft</strong> throws these changes away and keeps the published page.
+                    <?php else: ?>
+                        <strong>This page is a draft.</strong> It is not visible to visitors and is not listed anywhere on the site. You can view it at its address while logged in. <strong>Publish</strong> makes it live.
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            <div class="notice restore" id="restore-banner" style="display:none;">
+                <span>You have <strong>unsaved work</strong> for this page from <span id="restore-when"></span>, kept by your browser.</span>
+                <span class="spacer"></span>
+                <button class="btn small" type="button" onclick="swfRestoreDraft()">Restore it</button>
+                <button class="btn small secondary" type="button" onclick="swfDiscardLocal()">Discard</button>
+            </div>
             <?php if ($isNew && $newArchiveFor !== ''): ?>
                 <div class="notice">
                     <strong>This is a category page.</strong> It will list every post tagged <em><?php echo swf_e($newArchiveFor); ?></em>, newest first,
@@ -1092,10 +1124,23 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                 </div>
 
                 <div class="actions">
-                    <button class="btn" type="button" onclick="swfSave()"><?php echo $isNew ? ($isPost ? 'Create post' : 'Create page') : 'Save'; ?></button>
+                    <?php if ($isNew): ?>
+                        <button class="btn" type="button" onclick="swfSave(false)"><?php echo $isPost ? 'Publish post' : 'Publish page'; ?></button>
+                        <button class="btn secondary" type="button" onclick="swfSave(true)">Save as draft</button>
+                    <?php elseif ($hasDraft && $isLive): ?>
+                        <button class="btn" type="button" onclick="swfSave(true)">Save draft</button>
+                        <button class="btn" type="button" onclick="swfPublish()">Publish</button>
+                        <button class="btn secondary" type="button" onclick="swfDiscardDraft()">Discard draft</button>
+                    <?php elseif ($hasDraft): ?>
+                        <button class="btn" type="button" onclick="swfSave(true)">Save draft</button>
+                        <button class="btn" type="button" onclick="swfPublish()">Publish</button>
+                    <?php else: ?>
+                        <button class="btn" type="button" onclick="swfSave(false)">Save</button>
+                        <button class="btn secondary" type="button" onclick="swfSave(true)">Save as draft</button>
+                    <?php endif; ?>
                     <button class="btn secondary" type="button" onclick="swfPreview()">Preview</button>
                     <?php if (!$isNew): ?>
-                        <a class="btn secondary" href="/<?php echo swf_e($editName); ?>" target="_blank" rel="noopener">Open live &#8599;</a>
+                        <a class="btn secondary" href="/<?php echo swf_e($editName); ?>" target="_blank" rel="noopener"><?php echo $isLive ? 'Open live' : 'View draft'; ?> &#8599;</a>
                         <?php $vcount = count(backup_list_versions($editName)); ?>
                         <a class="btn secondary" href="<?php echo swf_e(swf_editor_url(['history' => $editName])); ?>">History<?php echo $vcount ? ' (' . $vcount . ')' : ''; ?></a>
                         <?php if (!in_array($editName, array('home', '404', 'navigation'), true) && strpos($editName, 'footer/') !== 0): ?>
@@ -1280,6 +1325,9 @@ function swfLogout() {
 
 <?php if ($view === 'form'): ?>
 var SWF_IS_NEW   = <?php echo $isNew ? 'true' : 'false'; ?>;
+var SWF_HAS_DRAFT = <?php echo !empty($hasDraft) ? 'true' : 'false'; ?>;
+var SWF_IS_LIVE   = <?php echo !empty($isLive) ? 'true' : 'false'; ?>;
+var SWF_PAGE_MTIME = <?php echo (int) ($isNew ? 0 : max(@filemtime(SWF_ROOT . 'pages/' . $editName . '.html') ?: 0, @filemtime(swf_draft_file($editName)) ?: 0)); ?>;
 
 /*
     The address follows the title until the address is edited by hand.
@@ -1599,11 +1647,12 @@ function swfStatus(msg, cls) {
     el.className = 'status ' + (cls || '');
 }
 
-function swfSave() {
+function swfSave(asDraft) {
     var f = swfFields();
     if (SWF_IS_NEW && !f.pagename && !f.pagetitle.trim()) { swfStatus('Give the page a title or an address first.', 'err'); return; }
     f.action = SWF_IS_NEW ? 'new' : 'save';
-    swfStatus('Saving…');
+    if (asDraft) { f.as_draft = 1; }
+    swfStatus(asDraft ? 'Saving draft…' : 'Saving…');
     jQuery.post(SWF_SAVE, f, function (r) {
         if (!r.success) {
             swfStatus(r.message, 'err');
@@ -1615,13 +1664,17 @@ function swfSave() {
             }
             return;
         }
+        swfLocalClear();
         if (SWF_IS_NEW) {
             // Reopen the page in edit mode so the next save is a plain save
+            swfSavedSnapshot = JSON.stringify(swfFields());
             window.location.href = SWF_EDITOR + '?page=' + encodeURIComponent(r.pagename);
             return;
         }
         swfStatus(r.message || 'Saved.', 'ok');
         swfSavedSnapshot = JSON.stringify(swfFields());
+        // Saving a draft of a live page, or a live save over a draft, changes which buttons apply
+        if ((asDraft && !SWF_HAS_DRAFT) || (!asDraft && SWF_HAS_DRAFT)) { setTimeout(function () { window.location.reload(); }, 700); return; }
         if (document.getElementById('preview').classList.contains('on')) { swfPreview(); }
     }, 'json').fail(function (x) {
         var msg = 'Save failed.';
@@ -1629,6 +1682,78 @@ function swfSave() {
         swfStatus(msg, 'err');
     });
 }
+
+function swfPublish() {
+    swfGeneric({ action: 'publish', pagename: SWF_PAGENAME }, null, function () { swfLocalClear(); swfSavedSnapshot = JSON.stringify(swfFields()); setTimeout(function () { window.location.reload(); }, 700); });
+}
+
+function swfDiscardDraft() {
+    if (!confirm(SWF_IS_LIVE ? 'Discard the draft and keep the published page? The draft is kept in History.' : 'Discard this draft? It is kept in History, but the page disappears from the list.')) { return; }
+    swfGeneric({ action: 'discarddraft', pagename: SWF_PAGENAME }, null, function (r) {
+        swfLocalClear(); swfSavedSnapshot = null;
+        setTimeout(function () { window.location.href = r.gone ? SWF_EDITOR : SWF_EDITOR + '?page=' + encodeURIComponent(SWF_PAGENAME); }, 700);
+    });
+}
+
+/*
+    Unsaved-work recovery. The form is written to the browser's localStorage
+    a moment after each change, under a key for this page (or for "new post" /
+    "new page"). Reopening the same form with such a record, newer than the
+    page's own file, offers to restore it. Cleared on save, publish, discard
+    and explicit Discard. Browser storage can be absent or full, so every
+    access is guarded; the editor works the same without it.
+*/
+var SWF_LOCAL_KEY = 'swf-draft:' + <?php echo json_encode(($_SERVER['HTTP_HOST'] ?? '') . ':'); ?> + (SWF_IS_NEW ? 'new:' + (SWF_ADDRESS_PREFIX ? 'post' : 'page') : SWF_PAGENAME);
+var swfLocalTimer = null;
+
+function swfLocalSave() {
+    try {
+        var f = swfFields(); delete f.csrf_token;
+        if (swfSavedSnapshot !== null && JSON.stringify(swfFields()) === swfSavedSnapshot) { localStorage.removeItem(SWF_LOCAL_KEY); return; }
+        localStorage.setItem(SWF_LOCAL_KEY, JSON.stringify({ when: Date.now(), fields: f }));
+    } catch (e) {}
+}
+function swfLocalSchedule() { clearTimeout(swfLocalTimer); swfLocalTimer = setTimeout(swfLocalSave, 1500); }
+function swfLocalClear() { try { localStorage.removeItem(SWF_LOCAL_KEY); } catch (e) {} }
+function swfLocalRead() { try { var v = localStorage.getItem(SWF_LOCAL_KEY); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+
+function swfLocalOffer() {
+    var rec = swfLocalRead();
+    if (!rec || !rec.fields) { return; }
+    // Nothing to offer if it matches what is already on screen, or predates the saved file
+    var cur = swfFields(); delete cur.csrf_token;
+    if (JSON.stringify(cur) === JSON.stringify(rec.fields)) { swfLocalClear(); return; }
+    if (!SWF_IS_NEW && rec.when < SWF_PAGE_MTIME * 1000) { swfLocalClear(); return; }
+    document.getElementById('restore-when').textContent = new Date(rec.when).toLocaleString();
+    document.getElementById('restore-banner').style.display = '';
+}
+
+function swfRestoreDraft() {
+    var rec = swfLocalRead(); if (!rec) { return; }
+    var f = rec.fields;
+    var set = function (id, v) { var el = document.getElementById(id); if (el && v !== undefined) { el.value = v; } };
+    if (SWF_IS_NEW && f.pagename !== undefined) { set('f-pagename', String(f.pagename).replace(/^posts\//, '')); swfAddressTouched = true; }
+    set('f-pagetitle', f.pagetitle); set('f-pagelayout', f.pagelayout); set('f-pagetype', f.pagetype); set('f-pagedate', f.pagedate);
+    set('f-pageauthor', f.pageauthor); set('f-pageimage', f.pageimage); set('f-pageexcerpt', f.pageexcerpt); set('f-pagekeywords', f.pagekeywords);
+    // categories: tick / add chips
+    if (f.pagecategory !== undefined) {
+        document.querySelectorAll('#cat-chips .chip input').forEach(function (cb) { cb.checked = false; });
+        String(f.pagecategory).split(',').map(function (c) { return c.trim(); }).filter(Boolean).forEach(function (slug) {
+            document.getElementById('cat-new').value = slug; swfCatAdd();
+        });
+    }
+    if (f.postcategory !== undefined) {
+        var sel = document.getElementById('f-postcategory-select');
+        if ([].some.call(sel.options, function (o) { return o.value === f.postcategory; })) { sel.value = f.postcategory; } else { sel.value = '__other'; document.getElementById('f-postcategory-other').value = f.postcategory; }
+        swfFilterChanged();
+    }
+    swfLayoutChanged();
+    if (f.content !== undefined) { if (swfMode === 'rich') { jQuery('#rich').summernote('code', f.content); } else { document.getElementById('plain').value = f.content; } }
+    document.getElementById('restore-banner').style.display = 'none';
+    swfStatus('Unsaved work restored. Nothing is saved until you save it.', 'ok');
+}
+
+function swfDiscardLocal() { swfLocalClear(); document.getElementById('restore-banner').style.display = 'none'; }
 
 function swfPreview() {
     var f = swfFields();
@@ -1663,6 +1788,12 @@ jQuery(function () {
     swfCatsChanged();
     swfFilterChanged();
     swfSavedSnapshot = JSON.stringify(swfFields());
+    // Autosave to the browser on any change, from the form fields and from the editor
+    document.querySelector('.meta').addEventListener('input', swfLocalSchedule);
+    document.querySelector('.meta').addEventListener('change', swfLocalSchedule);
+    document.getElementById('plain').addEventListener('input', swfLocalSchedule);
+    jQuery('#rich').on('summernote.change', swfLocalSchedule);
+    swfLocalOffer();
 });
 <?php endif; ?>
 </script>

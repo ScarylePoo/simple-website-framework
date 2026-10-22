@@ -138,11 +138,13 @@ jobs:
 
               RewriteRule ^edit/?$ plugins/editor/index.php [L,QSA]
               RewriteRule ^backups(/|$) - [R=404,L]
+              RewriteRule \.draft$ - [R=404,L]
 
             The first serves the editor at /edit/. The second is a safety
             net that refuses to serve the backups folder even if the
-            .htaccess inside it were lost. A site that predates the editor
-            will not have either.
+            .htaccess inside it were lost. The third stops the raw file of
+            an unpublished page (pages/<name>.html.draft) being fetched.
+            A site that predates the editor will have none of them.
 
           After unzipping
             1. Open config/config-example.php and look for settings you do not

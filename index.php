@@ -94,8 +94,18 @@
 	   draft is for this exact page — otherwise it stays null and the request is treated normally.
 	   The page need not exist yet, which is how a brand new page can be previewed before it is created. */
 	$pageContentOverride = null;
+	$swfNoCache = false;
 	if (isset($_GET['preview']) && isset($editorEnabled) && $editorEnabled === true) {
 		include 'plugins/editor/editor-preview.php';
+	}
+
+	/* Unpublished pages. A page saved as a draft in the editor exists only as pages/<name>.html.draft,
+	   which nothing public ever looks for — so it 404s like any missing page. The one exception is a
+	   logged-in editor session, which may view the draft at its real address. Handled by the editor's
+	   own code so that with the editor switched off this block does nothing at all. */
+	if ($pageContentOverride === null && isset($editorEnabled) && $editorEnabled === true
+		&& !file_exists("pages/" . $requestedPage . ".html") && file_exists("pages/" . strtolower($requestedPage) . ".html.draft")) {
+		include 'plugins/editor/editor-draftview.php';
 	}
 
 	

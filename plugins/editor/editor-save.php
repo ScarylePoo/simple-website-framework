@@ -87,6 +87,21 @@ function build_meta_block($fields) {
     return $meta;
 }
 
+/*
+    Drafts.
+
+    An unpublished page, or unpublished changes to a live page, live in a
+    sidecar file: pages/<name>.html.draft. Nothing on the public side knows
+    the extension — the router looks up pages/<name>.html, archives glob
+    *.html, the RSS feed checks the extension is exactly html — so a draft
+    cannot be served, listed or syndicated by accident, with no change to
+    any theme. The editor shows it, previews it, and "Publish" renames it
+    over the live file (keeping the old live file in the history).
+*/
+function editor_draft_path($pagename) {
+    return SWF_ROOT . 'pages/' . $pagename . '.html.draft';
+}
+
 // Assemble the full file text from POST fields
 function build_page_file($fields, $content) {
     return rtrim(build_meta_block($fields)) . "\n\n" . trim($content) . "\n";
@@ -173,12 +188,30 @@ if ($action === 'save') {
     }
 
     $filePath = editor_validate_path($pagename, SWF_ROOT);
-    if ($filePath === false || !file_exists($filePath)) {
+    $pagename = strtolower(ltrim($pagename, '/.'));
+    $draftPath = editor_draft_path($pagename);
+    if ($filePath === false || (!file_exists($filePath) && !file_exists($draftPath))) {
         echo json_encode(['success' => false, 'message' => 'Invalid or non-existent page path.']);
         exit;
     }
 
     $newFile = build_page_file($_POST, $content);
+
+    /*
+        Save as draft: write the sidecar and leave the live page alone. Also
+        the only option while the page exists as a draft and nothing else —
+        "Save" on an unpublished page keeps it unpublished; Publish is a
+        separate, deliberate step.
+    */
+    if (!empty($_POST['as_draft']) || !file_exists($filePath)) {
+        if (file_put_contents($draftPath, $newFile) === false) {
+            echo json_encode(['success' => false, 'message' => 'Failed to write the draft. Check permissions.']);
+            exit;
+        }
+        unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+        echo json_encode(['success' => true, 'message' => file_exists($filePath) ? 'Draft saved. The live page is unchanged until you publish.' : 'Draft saved. Not visible to visitors until you publish.', 'draft' => true]);
+        exit;
+    }
 
     // Keep the previous version, unless nothing actually changed
     $versioned = false;
@@ -197,6 +230,8 @@ if ($action === 'save') {
 
     editor_clear_cache($pagename);
     unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+    // A live save supersedes any draft sitting beside the page
+    if (file_exists($draftPath)) { @unlink($draftPath); }
 
     $auto = backup_maybe_auto();
     $msg  = 'Saved.';
@@ -229,11 +264,12 @@ if ($action === 'new') {
 
     $filePath  = SWF_ROOT . 'pages/' . $pagename . '.html';
     $parentDir = dirname($filePath);
+    $asDraft   = !empty($_POST['as_draft']);
 
-    if (file_exists($filePath)) {
+    if (file_exists($filePath) || file_exists(editor_draft_path($pagename))) {
         echo json_encode([
             'success'  => false,
-            'message'  => 'A page already exists at /' . $pagename . ' (pages/' . $pagename . '.html).',
+            'message'  => (file_exists($filePath) ? 'A page already exists at /' : 'A draft already exists at /') . $pagename . ' (pages/' . $pagename . (file_exists($filePath) ? '.html' : '.html.draft') . ').',
             'existing' => $pagename,
         ]);
         exit;
@@ -251,20 +287,63 @@ if ($action === 'new') {
     if (empty($_POST['pagelayout']))  { $_POST['pagelayout']  = 'page-html'; }
     if (empty($_POST['pagetype']))    { $_POST['pagetype']    = 'website'; }
 
-    if (file_put_contents($filePath, build_page_file($_POST, $content)) === false) {
+    if (file_put_contents($asDraft ? editor_draft_path($pagename) : $filePath, build_page_file($_POST, $content)) === false) {
         echo json_encode(['success' => false, 'message' => 'Failed to write file. Check permissions.']);
         exit;
     }
 
-    editor_clear_cache($pagename);
     unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
-    backup_maybe_auto();
+    if (!$asDraft) {
+        editor_clear_cache($pagename);
+        backup_maybe_auto();
+    }
 
     echo json_encode([
         'success'  => true,
-        'message'  => 'Page created.',
-        'pagename' => $pagename
+        'message'  => $asDraft ? 'Draft saved. Not visible to visitors until you publish.' : 'Page created.',
+        'pagename' => $pagename,
+        'draft'    => $asDraft,
     ]);
+    exit;
+}
+
+// ── PUBLISH / DISCARD A DRAFT ───────────────────────────────────────────────
+
+if ($action === 'publish' || $action === 'discarddraft') {
+    $pagename = trim($_POST['pagename'] ?? '');
+    $filePath = editor_validate_path($pagename, SWF_ROOT);
+    $pagename = strtolower(ltrim($pagename, '/.'));
+    $draftPath = editor_draft_path($pagename);
+    if ($filePath === false || !file_exists($draftPath)) {
+        echo json_encode(['success' => false, 'message' => 'There is no draft for this page.']);
+        exit;
+    }
+    if ($action === 'discarddraft') {
+        // Keep what was discarded in the page's history, so a change of mind costs nothing
+        backup_version_content($pagename, file_get_contents($draftPath));
+        @unlink($draftPath);
+        unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+        echo json_encode(['success' => true, 'message' => file_exists($filePath) ? 'Draft discarded; the live page is as it was. The draft is kept in History.' : 'Draft discarded and kept in History. The page is gone from the editor list once you leave it.', 'gone' => !file_exists($filePath)]);
+        exit;
+    }
+    // Publish: the live file (if any) goes into the history, then the draft becomes the live file
+    if (file_exists($filePath)) {
+        if (backup_version_page($pagename) === false && backup_dir() === false) {
+            echo json_encode(['success' => false, 'message' => 'Not published: the backup directory (' . backup_dir_label() . ') cannot be written, so the current live page could not be kept.']);
+            exit;
+        }
+    } elseif (!is_dir(dirname($filePath)) && !@mkdir(dirname($filePath), 0755, true)) {
+        echo json_encode(['success' => false, 'message' => 'Could not create the page folder.']);
+        exit;
+    }
+    if (!@rename($draftPath, $filePath) && !(@copy($draftPath, $filePath) && @unlink($draftPath))) {
+        echo json_encode(['success' => false, 'message' => 'Could not publish: the file could not be moved into place.']);
+        exit;
+    }
+    editor_clear_cache($pagename);
+    unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
+    backup_maybe_auto();
+    echo json_encode(['success' => true, 'message' => 'Published.']);
     exit;
 }
 
@@ -299,7 +378,7 @@ $editorProtectedPages = array('home', '404', 'navigation');
 if ($action === 'delete') {
     $pagename = trim($_POST['pagename'] ?? '');
     $filePath = editor_validate_path($pagename, SWF_ROOT);
-    if ($filePath === false || !file_exists($filePath)) {
+    if ($filePath === false || (!file_exists($filePath) && !file_exists(editor_draft_path(strtolower(ltrim($pagename, '/.')))))) {
         echo json_encode(['success' => false, 'message' => 'Invalid or non-existent page path.']);
         exit;
     }
@@ -311,6 +390,14 @@ if ($action === 'delete') {
     if (backup_dir() === false) {
         echo json_encode(['success' => false, 'message' => 'Not deleted: the backup directory (' . backup_dir_label() . ') cannot be written, so the page could not be moved to the trash.']);
         exit;
+    }
+    // A page that exists only as a draft: trash the draft file as the page
+    if (!file_exists($filePath) && file_exists(editor_draft_path($pagename))) {
+        @rename(editor_draft_path($pagename), $filePath);
+    } elseif (file_exists(editor_draft_path($pagename))) {
+        // Live page with a draft beside it: keep the draft in the history, then drop it
+        backup_version_content($pagename, file_get_contents(editor_draft_path($pagename)));
+        @unlink(editor_draft_path($pagename));
     }
     $stamp = backup_trash_page($pagename);
     if ($stamp === false) {
@@ -481,11 +568,11 @@ if ($action === 'preview') {
         }
     } else {
         $filePath = editor_validate_path($pagename, SWF_ROOT);
-        if ($filePath === false || !file_exists($filePath)) {
+        $pagename = strtolower(ltrim($pagename, '/.'));
+        if ($filePath === false || (!file_exists($filePath) && !file_exists(editor_draft_path($pagename)))) {
             echo json_encode(['success' => false, 'message' => 'Invalid or non-existent page path.']);
             exit;
         }
-        $pagename = strtolower(ltrim($pagename, '/.'));
     }
 
     $_SESSION[SWF_EDITOR_PREVIEW_KEY] = [

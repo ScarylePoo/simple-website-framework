@@ -12,7 +12,7 @@ if (isset($urlParts['query'])) {
     parse_str($urlParts['query'], $requestQueryParams);
 }
 
-$skipCache = false;
+$skipCache = !empty($swfNoCache); // index.php sets this for pages that must never be cached (an editor viewing a draft)
 foreach ($noCacheParams as $p) {
     if (isset($requestQueryParams[$p])) {
         $skipCache = true;

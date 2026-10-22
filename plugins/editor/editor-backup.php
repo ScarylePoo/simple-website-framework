@@ -180,6 +180,22 @@ function backup_version_page($pagename) {
     return basename($dest, '.html');
 }
 
+/*
+    Keep a given text as a version of a page (used when a draft is discarded
+    or superseded, so nothing typed is ever simply thrown away).
+*/
+function backup_version_content($pagename, $content) {
+    $dir = backup_page_dir('versions', $pagename);
+    if ($dir === false) { return false; }
+    $stamp = backup_stamp();
+    $dest  = $dir . $stamp . '.html';
+    $n = 1;
+    while (file_exists($dest)) { $dest = $dir . $stamp . '-' . (++$n) . '.html'; }
+    if (@file_put_contents($dest, $content) === false) { return false; }
+    backup_prune_versions($pagename);
+    return basename($dest, '.html');
+}
+
 function backup_list_versions($pagename) {
     $dir = backup_page_dir('versions', $pagename);
     if ($dir === false) { return array(); }

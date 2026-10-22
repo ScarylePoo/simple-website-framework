@@ -263,6 +263,21 @@ https://yoursite.com/edit/?page=posts/my-post
 
 <p>Click <strong>Save</strong> to write the file. The cache for that page is cleared straight away, and saving a post also clears the archive pages so the new content lists immediately.</p>
 
+<h3>Drafts</h3>
+
+<p>Every save has a <strong>Save as draft</strong> alternative. A draft is a page, or a set of changes to a page, that visitors cannot see:</p>
+
+<ul>
+    <li><strong>A new page saved as a draft</strong> is not published. It does not appear in archives, category pages, the RSS feed or anywhere on the site, and its address gives visitors the 404 page. You can view it at that address while logged in, and it shows in the editor list with a <em>Draft</em> badge. <strong>Publish</strong> makes it live.</li>
+    <li><strong>Changes saved as a draft on a live page</strong> leave the published page exactly as it was. The editor opens the draft from then on, marked <em>Unpublished changes</em>, with <strong>Publish</strong> (replaces the live page, keeping the old one in History) and <strong>Discard draft</strong> (throws the changes away, also keeping them in History). Preview shows the draft.</li>
+</ul>
+
+<p>On disk a draft is a sidecar file, <code>pages/&lt;name&gt;.html.draft</code>, next to (or instead of) the live <code>pages/&lt;name&gt;.html</code>. Nothing on the public side of the framework looks for that extension, which is what keeps drafts invisible without any theme needing to know about them. Backups include them.</p>
+
+<h3>Unsaved work</h3>
+
+<p>Separately from drafts, the editor keeps a copy of whatever you are typing in your browser's own storage, a moment after each change. If the tab is closed, the browser crashes or the session times out before you save, reopening the same page (or the new post form) offers to restore that work. It is cleared when you save, publish or discard. This never leaves your browser; it is a safety net, not a place anything is stored.</p>
+
 <h3>History, Delete and Backups</h3>
 
 <p>Every save keeps a copy of the page as it was. <strong>History</strong> on the edit screen lists those copies with what changed in each, and can restore any of them. <strong>Delete</strong> moves a page to a trash rather than removing it. The <strong>Backups</strong> link in the toolbar makes and downloads zips of the site, and is where deleted pages are restored from. All of this is covered on its own page: <a href="documentation/setup/backups">Versions, Trash and Backups</a>.</p>
