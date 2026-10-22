@@ -190,6 +190,25 @@ $themeName  = $theme ?? 'starter';
     layout the theme no longer has keeps its value instead of being silently
     rewritten to page-html on save.
 */
+/*
+    Which of the theme's templates still read the page file directly instead
+    of through swf_page_source()? Those will show the saved page in a preview,
+    not the draft. Returns the list of offending template names (may be empty).
+*/
+function swf_theme_preview_blockers($themeName) {
+    $out = array();
+    // Only the page layouts: header.php legitimately builds the path for filemtime()
+    foreach (glob(SWF_ROOT . 'themes/' . $themeName . '/page-*.php') as $f) {
+        $src = @file_get_contents($f);
+        if ($src === false) { continue; }
+        // Any construction of the current page's own path, however it is then read
+        if (preg_match('/["\']\.?\/?pages\/["\']\s*\.\s*\$pagename/', $src)) {
+            $out[] = basename($f);
+        }
+    }
+    return $out;
+}
+
 function swf_layout_options($themeName, $current = '') {
     $opts = array();
     $dir  = SWF_ROOT . 'themes/' . $themeName . '/';
@@ -1057,6 +1076,15 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                     </div>
                 </div>
 
+                <?php $previewBlockers = swf_theme_preview_blockers($themeName); if ($previewBlockers): ?>
+                <div class="notice warn">
+                    <strong>Preview will show the saved page, not your draft.</strong>
+                    The <code><?php echo swf_e($themeName); ?></code> theme reads the page file directly in
+                    <code><?php echo swf_e(implode('</code>, <code>', $previewBlockers)); ?></code>.
+                    Change each <code>file_get_contents("./pages/" . $pagename . ".html")</code> to <code>swf_page_source($pagename)</code>
+                    and previews will reflect unsaved changes. The output is identical outside preview. See the editor documentation under &ldquo;Themes and the preview&rdquo;.
+                </div>
+                <?php endif; ?>
                 <div class="content-wrap">
                     <div class="mode" id="mode-label"></div>
                     <div id="rich"></div>
