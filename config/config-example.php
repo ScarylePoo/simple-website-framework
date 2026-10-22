@@ -119,6 +119,10 @@
         $editorPasswordHash = ''; /* Paste your bcrypt hash here */
         $editorTotpSecret   = ''; /* Optional 2FA. Base32 only (A-Z, 2-7). Empty = off. See notes above. */
         $editorSessionTimeout = 1800; /* Session lifetime in seconds. Default: 1800 (30 minutes) */
+        $editorUpdateCheck  = true; /* Once a day, when you open the editor, ask GitHub whether a newer framework
+                                       version has been released, and show a notice if so. The only thing sent is
+                                       an ordinary request for the releases page from your server. Nothing is
+                                       ever installed automatically. false = never check. */
 
         /* ── Backups ────────────────────────────────────────────────────────────
            The editor keeps a copy of every page before it saves over it, moves

@@ -319,6 +319,24 @@ $editorSessionTimeout = 900;   // 15 minutes
 
 <hr/>
 
+<h2>Update Notices</h2>
+
+<p>The version chip in the editor's top bar (<em>SWF 1.1.5</em>) doubles as an update check. Once a day, when you open the editor, it asks GitHub for the newest framework release; if that is newer than the site, the chip turns amber (<em>SWF 1.1.5 → 1.2.0</em>) and a bar appears under the top bar with the release's first line of notes and three links: <strong>What's new</strong> (the release page), <strong>Download the upgrade zip</strong>, and <strong>How to upgrade</strong> (the <a href="documentation/setup/installation">upgrade instructions</a>). <strong>Dismiss</strong> hides it until the next release after that one. Click the chip at any time to check now; its tooltip tells you when it last looked.</p>
+
+<p>Nothing is installed for you. Upgrading is still "download the zip, unzip it over the site" &mdash; the editor deliberately never writes to the framework's own files from the network.</p>
+
+<p>How it works, for the record: GitHub publishes every release of the framework as JSON at <code>api.github.com/repos/ScarylePoo/simple-website-framework/releases/latest</code>. The editor fetches that once a day at most, from your server, with a 5-second timeout, and remembers the answer in <code>plugins/editor/update-check.json</code> (which the editor's <code>.htaccess</code> refuses to serve). The only thing GitHub sees is an ordinary request from your server's address. A site nobody logs in to never checks at all. If the request fails &mdash; a host that blocks outgoing connections, say &mdash; nothing is shown and it tries again an hour later.</p>
+
+<p>To never check, set in <code>config/config.php</code>:</p>
+<pre><code class="language-php">$editorUpdateCheck = false;
+</code></pre>
+
+<p>Without the editor, or from cron, the same check is available on the command line and exits with <code>10</code> when an update is available, so it can trigger an email:</p>
+<pre><code class="language-bash">php plugins/editor/backup-cli.php check-update
+</code></pre>
+
+<hr/>
+
 <h2>Security Model</h2>
 
 <p>The editor uses several layers of protection:</p>

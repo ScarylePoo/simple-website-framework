@@ -607,6 +607,36 @@ if ($action === 'preview') {
 
 // ── LOGOUT ──────────────────────────────────────────────────────────────────
 
+// ── UPDATE CHECK ────────────────────────────────────────────────────────────
+
+if ($action === 'checkupdate') {
+    require_once __DIR__ . '/editor-update.php';
+    if (!update_check_enabled()) {
+        echo json_encode(['success' => false, 'message' => 'Update checks are switched off ($editorUpdateCheck in config.php).']);
+        exit;
+    }
+    $state = update_check(true);
+    if (empty($state['checked']) || (!empty($state['failed']) && $state['failed'] >= $state['checked'])) {
+        echo json_encode(['success' => false, 'message' => 'Could not reach GitHub to check for a newer version. The host may block outgoing requests; the releases page is at ' . SWF_UPDATE_RELEASES]);
+        exit;
+    }
+    $new = update_available($state);
+    echo json_encode(['success' => true, 'message' => $new ? 'Version ' . $new['version'] . ' is available.' : 'This site is up to date (' . SWF_VERSION . ').', 'latest' => $state['latest']['version'] ?? '']);
+    exit;
+}
+
+if ($action === 'dismissupdate') {
+    require_once __DIR__ . '/editor-update.php';
+    $v = trim($_POST['version'] ?? '');
+    if (!preg_match('/^\d+(\.\d+){1,3}$/', $v)) {
+        echo json_encode(['success' => false, 'message' => 'Bad version.']);
+        exit;
+    }
+    update_dismiss($v);
+    echo json_encode(['success' => true, 'message' => 'Hidden until the next release.']);
+    exit;
+}
+
 if ($action === 'logout') {
     unset($_SESSION[SWF_EDITOR_PREVIEW_KEY]);
     editor_logout();

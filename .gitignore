@@ -5,6 +5,7 @@ passwordhash.php
 # Editor runtime state (written by plugins/editor at run time; a missing file is fine)
 plugins/editor/lockouts.json
 plugins/editor/totp-used.json
+plugins/editor/update-check.json
 
 # Page versions, trash and site backups
 backups/

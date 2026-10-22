@@ -7,11 +7,18 @@
         php plugins/editor/backup-cli.php full       full-site backup
         php plugins/editor/backup-cli.php list       show what is stored
         php plugins/editor/backup-cli.php version    print the framework version
+        php plugins/editor/backup-cli.php check-update
+                                                     ask GitHub whether a newer version exists
+                                                     (exit 0 up to date, 10 update available, 1 no answer)
 
     Archives go to the backup directory ($backupDir in config.php, default
     backups/) and are rotated: the newest $backupKeepArchives of each kind
     made by cron or the weekly automatic run are kept; ones you made by hand
     in the editor are never removed automatically.
+
+    check-update is cron-friendly too — a weekly email when a release is out:
+
+        0 9 * * 1 php /path/to/site/plugins/editor/backup-cli.php check-update | grep -q available && echo "SWF update" | mail -s "SWF update available" you@example.com
 
     A nightly content backup, kept for a week, is one crontab line:
 
@@ -48,6 +55,26 @@ if (!file_exists(SWF_ROOT . 'config/config.php')) {
 }
 require_once SWF_ROOT . 'config/config.php';
 require_once __DIR__ . '/editor-backup.php';
+
+if ($cmd === 'check-update') {
+    require_once __DIR__ . '/editor-update.php';
+    if (!update_check_enabled()) { echo "Update checks are off (\$editorUpdateCheck = false in config.php).\n"; exit(1); }
+    $state = update_check(true);
+    if (empty($state['latest']['version']) || !empty($state['failed'])) {
+        fwrite(STDERR, "Could not reach GitHub. Releases: " . SWF_UPDATE_RELEASES . "\n");
+        exit(1);
+    }
+    $latest = $state['latest'];
+    echo "This site:      " . SWF_VERSION . "\n";
+    echo "Newest release: " . $latest['version'] . ($latest['published'] ? '  (' . date('Y-m-d', $latest['published']) . ')' : '') . "\n";
+    if (version_compare($latest['version'], SWF_VERSION, '>')) {
+        echo "Update available: " . $latest['url'] . "\n";
+        if ($latest['zip'] !== '') { echo "Upgrade zip:      " . $latest['zip'] . "\n"; }
+        exit(10);
+    }
+    echo "Up to date.\n";
+    exit(0);
+}
 
 if ($cmd === 'list') {
     echo "Simple Website Framework " . SWF_VERSION . "\n";

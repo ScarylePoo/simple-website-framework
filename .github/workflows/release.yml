@@ -88,6 +88,7 @@ jobs:
           tar -c \
             --exclude 'plugins/editor/lockouts.json' \
             --exclude 'plugins/editor/totp-used.json' \
+            --exclude 'plugins/editor/update-check.json' \
             --exclude 'themes/starter/swf-starter-theme.zip' \
             --exclude 'plugins/yBox-main/demo.html' \
             --exclude 'plugins/yBox-main/demo_files' \
@@ -244,9 +245,9 @@ jobs:
           set -euo pipefail
           V="${{ steps.version.outputs.version }}"
           for z in dist/*.zip; do
-            if unzip -l "$z" | awk '{print $4}' | grep -Eq '^(config/config\.php|pages/documentation/|extras/|\.git|backups/|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'; then
+            if unzip -l "$z" | awk '{print $4}' | grep -Eq '^(config/config\.php|pages/documentation/|extras/|\.git|backups/|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|plugins/editor/update-check\.json|cached-)'; then
               echo "::error::$z contains files that must not be distributed"
-              unzip -l "$z" | awk '{print $4}' | grep -E '^(config/config\.php|pages/documentation/|extras/|\.git|backups/|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|cached-)'
+              unzip -l "$z" | awk '{print $4}' | grep -E '^(config/config\.php|pages/documentation/|extras/|\.git|backups/|plugins/editor/lockouts\.json|plugins/editor/totp-used\.json|plugins/editor/update-check\.json|cached-)'
               exit 1
             fi
           done

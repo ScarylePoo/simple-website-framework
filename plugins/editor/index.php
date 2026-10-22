@@ -41,6 +41,7 @@ if (!isset($editorEnabled) || $editorEnabled !== true) {
 require_once __DIR__ . '/editor-auth.php';
 require_once __DIR__ . '/editor-backup.php';
 require_once __DIR__ . '/editor-files.php';
+require_once __DIR__ . '/editor-update.php';
 
 /*
     Small helpers used throughout this file.
@@ -476,6 +477,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .notice.err { background: var(--err-bg); color: var(--err-ink); border-color: var(--err-line); }
 .notice.warn { background: var(--warn-bg); color: var(--warn-ink); }
 .notice p { margin: 6px 0 0; }
+.topbar a.ver { color: var(--muted); text-decoration: none; font-size: 0.85rem; }
+.topbar a.ver.new { color: var(--warn-ink); background: var(--warn-bg); padding: 2px 8px; border-radius: 10px; }
+.updatebar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 20px; background: var(--warn-bg); color: var(--warn-ink); border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+.updatebar .what { flex: 1 1 320px; color: var(--muted); font-size: 0.85rem; }
+.updatebar a { color: inherit; }
+.updatebar button.quiet { color: inherit; background: none; border: 1px solid currentColor; border-radius: 5px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 0.85rem; opacity: .8; }
 
 /* login */
 .login h1 { font-size: 1.15rem; margin: 0 0 18px; }
@@ -662,7 +669,8 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
 
     <div class="topbar">
         <a class="brand" href="<?php echo swf_e(swf_editor_url()); ?>">Editor <small><?php echo swf_e($siteTitle); ?></small></a>
-        <span class="kv" title="Simple Website Framework version">SWF <?php echo swf_e(SWF_VERSION); ?></span>
+        <?php $updState = update_check(); $updNew = update_available($updState); ?>
+        <a class="ver<?php echo $updNew ? ' new' : ''; ?>" href="#" onclick="swfCheckUpdate(this); return false;" title="<?php echo swf_e(update_status_text($updState)); ?>">SWF <?php echo swf_e(SWF_VERSION); ?><?php if ($updNew): ?> &rarr; <?php echo swf_e($updNew['version']); ?><?php endif; ?></a>
         <span class="spacer"></span>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['files' => 1])); ?>">Files</a>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['backups' => 1])); ?>">Backups</a>
@@ -670,6 +678,18 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['totp' => 'setup'])); ?>"><?php echo $totpOn ? 'Two-factor: on' : 'Two-factor: off'; ?></a>
         <button class="quiet" type="button" onclick="swfLogout()">Log out</button>
     </div>
+
+    <?php if ($updNew): ?>
+    <div class="updatebar" id="updatebar">
+        <strong>Simple Website Framework <?php echo swf_e($updNew['version']); ?> is available</strong>
+        <span>(this site is on <?php echo swf_e(SWF_VERSION); ?>)</span>
+        <?php if ($updNew['notes'] !== ''): ?><span class="what"><?php echo swf_e($updNew['notes']); ?></span><?php endif; ?>
+        <a href="<?php echo swf_e($updNew['url']); ?>" target="_blank" rel="noopener">What's new &#8599;</a>
+        <?php if ($updNew['zip'] !== ''): ?><a href="<?php echo swf_e($updNew['zip']); ?>">Download the upgrade zip</a><?php endif; ?>
+        <a href="https://simplewebframe.work/documentation/setup/installation" target="_blank" rel="noopener">How to upgrade</a>
+        <button class="quiet" type="button" onclick="swfDismissUpdate(this, <?php echo swf_e(json_encode($updNew['version'])); ?>)" title="Hide this until the next release">Dismiss</button>
+    </div>
+    <?php endif; ?>
 
     <?php if ($view === 'totp'): ?>
         <?php require_once __DIR__ . '/editor-totp-setup.php'; ?>
@@ -1198,6 +1218,17 @@ function swfFilter(input, listId) {
     var q = input.value.toLowerCase();
     document.querySelectorAll('#' + listId + ' li[data-f]').forEach(function (li) {
         li.style.display = li.getAttribute('data-f').indexOf(q) !== -1 ? '' : 'none';
+    });
+}
+
+function swfCheckUpdate(a) {
+    a.textContent = 'Checking…';
+    swfGeneric({action: 'checkupdate'}, null, function () { location.reload(); });
+}
+function swfDismissUpdate(btn, version) {
+    swfGeneric({action: 'dismissupdate', version: version}, btn, function () {
+        var bar = document.getElementById('updatebar'); if (bar) { bar.remove(); }
+        var v = document.querySelector('.topbar a.ver'); if (v) { v.className = 'ver'; v.textContent = 'SWF ' + <?php echo json_encode(SWF_VERSION); ?>; }
     });
 }
 
