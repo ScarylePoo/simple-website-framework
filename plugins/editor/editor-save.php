@@ -100,8 +100,18 @@ function build_page_file($fields, $content) {
     with neither an address nor a title is refused rather than guessed at.
     Returns the address, or a string starting with "!" carrying the error.
 */
-function editor_settle_new_address($address, $title) {
+function editor_settle_new_address($address, $title, $isPost = false) {
     $address = trim(str_replace('\\', '/', (string) $address));
+    // A post lives under posts/ whatever the form sent: strip any folder the
+    // address came with and put it back under posts/. The post form says it
+    // is the post form (is_post), so there is no way to save a post anywhere
+    // else — in particular not as a page called /posts.
+    if ($isPost) {
+        $address = trim($address, '/');
+        if ($address === 'posts') { $address = ''; }                                   // an old form's bare prefix
+        elseif (strpos($address, 'posts/') === 0) { $address = substr($address, 6); }
+        $address = $address === '' ? 'posts/' : 'posts/' . $address;
+    }
     $slug = strtolower(trim((string) $title));
     $slug = trim(preg_replace('/[^a-z0-9]+/', '-', $slug), '-');
     if (strlen($slug) > 80) { $slug = rtrim(substr($slug, 0, 80), '-'); }
@@ -205,7 +215,7 @@ if ($action === 'new') {
 
     // No address, or only "posts/": make one from the title rather than
     // creating a page literally called /posts (which is what once happened).
-    $pagename = editor_settle_new_address($pagename, $_POST['pagetitle'] ?? '');
+    $pagename = editor_settle_new_address($pagename, $_POST['pagetitle'] ?? '', !empty($_POST['is_post']));
     if ($pagename[0] === '!') {
         echo json_encode(['success' => false, 'message' => substr($pagename, 1)]);
         exit;
@@ -459,7 +469,7 @@ if ($action === 'preview') {
     $isNew    = !empty($_POST['is_new']);
 
     if ($isNew) {
-        $pagename = editor_settle_new_address($pagename, $_POST['pagetitle'] ?? '');
+        $pagename = editor_settle_new_address($pagename, $_POST['pagetitle'] ?? '', !empty($_POST['is_post']));
         if ($pagename[0] === '!') {
             echo json_encode(['success' => false, 'message' => substr($pagename, 1)]);
             exit;

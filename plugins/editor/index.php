@@ -585,6 +585,8 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
 .picker .empty { padding: 30px; text-align: center; color: var(--muted); }
 .with-choose { display: flex; gap: 8px; }
 .with-choose input { flex: 1; min-width: 0; }
+.with-choose .prefix { display: inline-flex; align-items: center; padding: 0 10px; border: 1px solid var(--line); border-right: 0; border-radius: 4px 0 0 4px; background: var(--bg); color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9rem; }
+.with-choose .prefix + input { border-radius: 0 4px 4px 0; }
 .note-btn.swf-files-btn { font-size: 0.8rem; }
 
 @media (max-width: 860px) {
@@ -967,8 +969,11 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
                 <div class="meta">
                     <?php if ($isNew): ?>
                     <div class="full">
-                        <label>Address <small>(lowercase letters, numbers and hyphens; use / for folders)</small></label>
-                        <input type="text" id="f-pagename" placeholder="<?php echo $isPost ? 'posts/my-first-post' : 'about-us  or  docs/getting-started'; ?>" value="<?php echo $isPost ? 'posts/' : ($newArchiveFor !== '' ? swf_e(preg_replace('/[^a-z0-9]+/', '-', $newArchiveFor)) : ''); ?>" oninput="swfAddressTouched = true" autofocus>
+                        <label>Address <small>(<?php echo $isPost ? 'posts always live under posts/; ' : ''; ?>lowercase letters, numbers and hyphens<?php echo $isPost ? '' : '; use / for folders'; ?>)</small></label>
+                        <div class="with-choose">
+                            <?php if ($isPost): ?><span class="prefix">posts/</span><?php endif; ?>
+                            <input type="text" id="f-pagename" placeholder="<?php echo $isPost ? 'my-first-post' : 'about-us  or  docs/getting-started'; ?>" value="<?php echo !$isPost && $newArchiveFor !== '' ? swf_e(preg_replace('/[^a-z0-9]+/', '-', $newArchiveFor)) : ''; ?>" oninput="swfAddressTouched = true" autofocus>
+                        </div>
                         <div class="kv" id="address-hint" style="margin-top:4px;"></div>
                     </div>
                     <?php endif; ?>
@@ -1261,10 +1266,10 @@ function swfAddressFromTitle() {
     if (!SWF_IS_NEW) { return; }
     var addr = document.getElementById('f-pagename');
     var cur = addr.value.trim();
-    // Only while the field is untouched, or still just the prefix
-    if (swfAddressTouched && cur !== '' && cur !== SWF_ADDRESS_PREFIX) { return; }
+    // Only while the field is untouched or empty
+    if (swfAddressTouched && cur !== '') { return; }
     var slug = swfSlug(document.getElementById('f-pagetitle').value);
-    addr.value = slug ? SWF_ADDRESS_PREFIX + slug : SWF_ADDRESS_PREFIX;
+    addr.value = slug;
     swfAddressTouched = false;
     document.getElementById('address-hint').textContent = slug ? 'Made from the title; edit it if you want something else.' : '';
 }
@@ -1542,7 +1547,8 @@ function swfFilterChanged() {
 function swfFields() {
     var f = {
         csrf_token:   SWF_CSRF,
-        pagename:     SWF_IS_NEW ? document.getElementById('f-pagename').value.trim() : SWF_PAGENAME,
+        // For a new post the field holds only the post's own name; posts/ is fixed in front of it
+        pagename:     SWF_IS_NEW ? (function () { var v = document.getElementById('f-pagename').value.trim().replace(/^\/+/, ''); return v === '' ? '' : SWF_ADDRESS_PREFIX + v; })() : SWF_PAGENAME,
         pagetitle:    document.getElementById('f-pagetitle').value,
         pagelayout:   document.getElementById('f-pagelayout').value,
         pagetype:     document.getElementById('f-pagetype').value,
@@ -1555,7 +1561,7 @@ function swfFields() {
         postcategory: document.getElementById('f-postcategory').value,
         content:      swfGetContent()
     };
-    if (SWF_IS_NEW) { f.is_new = 1; }
+    if (SWF_IS_NEW) { f.is_new = 1; if (SWF_ADDRESS_PREFIX) { f.is_post = 1; } }
     return f;
 }
 
