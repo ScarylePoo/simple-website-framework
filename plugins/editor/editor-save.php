@@ -183,6 +183,13 @@ if ($action === 'new') {
         exit;
     }
 
+    // "posts/" with nothing after it would make a PAGE called /posts, which is
+    // never what was meant (the new-post form prefills "posts/").
+    if (substr(rtrim($pagename), -1) === '/') {
+        echo json_encode(['success' => false, 'message' => 'The address ends with a slash. Add the page\'s own name after it, for example ' . rtrim($pagename) . 'my-first-post.']);
+        exit;
+    }
+
     $pagename = editor_validate_new_pagename($pagename, SWF_ROOT);
     if ($pagename === false) {
         echo json_encode(['success' => false, 'message' => 'Page name may only contain lowercase letters, numbers and hyphens, separated by forward slashes, and must not clash with an existing site folder.']);
@@ -193,7 +200,11 @@ if ($action === 'new') {
     $parentDir = dirname($filePath);
 
     if (file_exists($filePath)) {
-        echo json_encode(['success' => false, 'message' => 'A page with that name already exists.']);
+        echo json_encode([
+            'success'  => false,
+            'message'  => 'A page already exists at /' . $pagename . ' (pages/' . $pagename . '.html).',
+            'existing' => $pagename,
+        ]);
         exit;
     }
 

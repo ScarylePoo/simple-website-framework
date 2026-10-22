@@ -1549,7 +1549,16 @@ function swfSave() {
     f.action = SWF_IS_NEW ? 'new' : 'save';
     swfStatus('Saving…');
     jQuery.post(SWF_SAVE, f, function (r) {
-        if (!r.success) { swfStatus(r.message, 'err'); return; }
+        if (!r.success) {
+            swfStatus(r.message, 'err');
+            if (r.existing) {
+                // Offer to open the page that is in the way
+                var el = document.getElementById('status');
+                var a = document.createElement('a'); a.href = SWF_EDITOR + '?page=' + encodeURIComponent(r.existing); a.textContent = 'Open it'; a.style.marginLeft = '8px';
+                el.appendChild(document.createTextNode(' ')); el.appendChild(a);
+            }
+            return;
+        }
         if (SWF_IS_NEW) {
             // Reopen the page in edit mode so the next save is a plain save
             window.location.href = SWF_EDITOR + '?page=' + encodeURIComponent(r.pagename);
