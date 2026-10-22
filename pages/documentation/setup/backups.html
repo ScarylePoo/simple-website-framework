@@ -24,7 +24,7 @@ backups/
   versions/&lt;page&gt;/&lt;timestamp&gt;.html   earlier versions of each page
   trash/&lt;page&gt;/&lt;timestamp&gt;.html      pages you deleted (with their versions)
   trash-files/&lt;path&gt;.&lt;timestamp&gt;       files deleted or replaced on the Files screen
-  archives/swf-&lt;kind&gt;-&lt;timestamp&gt;-&lt;how&gt;.zip   site backups
+  archives/swf-&lt;site&gt;-&lt;kind&gt;-&lt;timestamp&gt;-&lt;how&gt;.zip   site backups
 </pre>
 
 <p>The folder is created the first time it is needed, with the two protection files already in place, and they are put back on every run if something removes them. The site's own <code>.htaccess</code> also answers 404 for anything under <code>backups/</code>, so there are two locks. The only way to get a file out is the editor's own download link, logged in.</p>
@@ -68,7 +68,7 @@ $backupDir = '/home/yourname/site-backups';
 
 <p>Neither includes the backup folder itself, cache files, or the editor's own state files. Both include <code>config/config.php</code>, which holds your editor password hash and, if set, the two-factor secret, so treat a downloaded backup with the same care as the site.</p>
 
-<p>The file name says what it is and how it was made: <code>swf-content-20261021-031500-manual.zip</code> was a content backup made by hand; <code>-auto</code> means the weekly one, <code>-cron</code> a scheduled run. Each zip also contains a short <code>BACKUP.txt</code> saying the same.</p>
+<p>The file name says which site it is, what it is and how it was made: <code>swf-example.com-content-20261021-031500-manual.zip</code> was a content backup of example.com made by hand; <code>-auto</code> means the weekly one, <code>-cron</code> a scheduled run. The site part is the domain from <code>$WebsiteURL</code>, so backups from several sites can sit in one folder and still be told apart. Each zip also contains a short <code>BACKUP.txt</code> saying the same.</p>
 
 <h3>By hand</h3>
 

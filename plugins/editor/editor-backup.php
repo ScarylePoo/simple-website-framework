@@ -14,7 +14,7 @@
                                even on a server that ignores .htaccess
           versions/<page>/<stamp>.html     previous versions of each page
           trash/<page>/<stamp>.html        pages that were deleted
-          archives/swf-<kind>-<stamp>.zip  content and full-site backups
+          archives/swf-<site>-<kind>-<stamp>-<how>.zip   content and full-site backups
 
     The directory is created on first use with both protection files. If
     your web server is not Apache, point $backupDir at a folder outside the
@@ -477,6 +477,22 @@ function backup_collect_files($kind) {
     return $files;
 }
 
+/*
+    The site's name for file names: its domain from $WebsiteURL, lowercased,
+    without scheme, www. or path, keeping only letters, digits, dots and
+    hyphens. "https://www.Example.com/" becomes "example.com". With many
+    sites' backups on one machine this is what tells them apart.
+*/
+function backup_site_slug() {
+    $url = strtolower(trim((string) ($GLOBALS['WebsiteURL'] ?? '')));
+    $url = preg_replace('#^[a-z]+://#', '', $url);
+    $url = preg_replace('#^www\.#', '', $url);
+    $url = preg_replace('#[/:?\#].*$#', '', $url);      // drop path, port, query
+    $url = preg_replace('/[^a-z0-9.\-]+/', '-', $url);
+    $url = trim($url, '.-');
+    return $url !== '' ? $url : 'site';
+}
+
 function backup_archive_dir() {
     return backup_dir('archives');
 }
@@ -498,7 +514,7 @@ function backup_make_archive($kind, $trigger = 'manual') {
         return 'The backup directory (' . backup_dir_label() . ') is not writable.';
     }
     $trigger = preg_replace('/[^a-z]/', '', strtolower($trigger)) ?: 'manual';
-    $name = 'swf-' . $kind . '-' . backup_stamp() . '-' . $trigger . '.zip';
+    $name = 'swf-' . backup_site_slug() . '-' . $kind . '-' . backup_stamp() . '-' . $trigger . '.zip';
     $path = $dir . $name;
     $tmp  = $path . '.part';
 
@@ -512,7 +528,7 @@ function backup_make_archive($kind, $trigger = 'manual') {
         if ($zip->addFile(SWF_ROOT . $rel, $rel)) { $count++; }
     }
     $zip->addFromString('BACKUP.txt',
-        "Simple Website Framework " . $kind . " backup\n"
+        "Simple Website Framework " . $kind . " backup of " . backup_site_slug() . "\n"
       . "Made " . date('Y-m-d H:i:s') . " (" . $trigger . ")\n"
       . "Files: " . $count . "\n\n"
       . ($kind === 'content'
@@ -531,8 +547,9 @@ function backup_list_archives() {
     $out = array();
     foreach (glob($dir . 'swf-*.zip') as $f) {
         $name = basename($f);
-        if (!preg_match('/^swf-(content|full)-(\d{8}-\d{6})-([a-z]+)\.zip$/', $name, $m)) { continue; }
-        $out[] = array('name' => $name, 'kind' => $m[1], 'stamp' => $m[2], 'time' => backup_stamp_to_time($m[2]), 'trigger' => $m[3], 'size' => filesize($f), 'file' => $f);
+        // The site part is optional so archives made before it was added still list and rotate
+        if (!preg_match('/^swf-(?:([a-z0-9.\-]+)-)?(content|full)-(\d{8}-\d{6})-([a-z]+)\.zip$/', $name, $m)) { continue; }
+        $out[] = array('name' => $name, 'site' => $m[1], 'kind' => $m[2], 'stamp' => $m[3], 'time' => backup_stamp_to_time($m[3]), 'trigger' => $m[4], 'size' => filesize($f), 'file' => $f);
     }
     usort($out, function ($a, $b) { return strcmp($b['stamp'], $a['stamp']); });
     return $out;
@@ -556,7 +573,7 @@ function backup_prune_archives() {
 }
 
 function backup_archive_file($name) {
-    if (!preg_match('/^swf-(content|full)-\d{8}-\d{6}-[a-z]+\.zip$/', (string) $name)) { return false; }
+    if (!preg_match('/^swf-(?:[a-z0-9.\-]+-)?(content|full)-\d{8}-\d{6}-[a-z]+\.zip$/', (string) $name)) { return false; }
     $dir = backup_archive_dir();
     if ($dir === false) { return false; }
     $f = $dir . $name;

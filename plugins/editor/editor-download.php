@@ -5,7 +5,7 @@
     editor session. This is the only route out of the backup directory,
     which is otherwise denied to the web entirely.
 
-        editor-download.php?archive=swf-content-20261020-231500-manual.zip
+        editor-download.php?archive=swf-example.com-content-20261020-231500-manual.zip
         editor-download.php?page=posts/my-post&version=20261020-231500
 
     GET is used so the browser treats it as a normal file download. Nothing
