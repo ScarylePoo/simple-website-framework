@@ -14,6 +14,16 @@
     Needs required/feeds.php (swf_sitemap_pages), which index.php includes.
 */
 
+/*
+    Anything already in the output buffer — typically a newline after the
+    closing ?> in config.php — would land before the <?xml declaration and
+    make the document invalid. PHP's output buffering is on by default on
+    hosted servers, so it can be discarded here; if it is off, there is
+    nothing to be done and the stray bytes have already gone out.
+*/
+while (ob_get_level() > 0) { ob_end_clean(); }
+ob_start();
+
 header('Content-Type: application/xml; charset=UTF-8');
 
 $siteLink = rtrim($WebsiteURL, '/');

@@ -29,6 +29,16 @@
     index.php includes before this file.
 */
 
+/*
+    Anything already in the output buffer — typically a newline after the
+    closing ?> in config.php — would land before the <?xml declaration and
+    make the document invalid. PHP's output buffering is on by default on
+    hosted servers, so it can be discarded here; if it is off, there is
+    nothing to be done and the stray bytes have already gone out.
+*/
+while (ob_get_level() > 0) { ob_end_clean(); }
+ob_start();
+
 header('Content-Type: application/rss+xml; charset=UTF-8');
 
 // ── Settings ──────────────────────────────────────────────────────────────
