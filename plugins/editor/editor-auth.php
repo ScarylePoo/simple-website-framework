@@ -38,6 +38,25 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+/*
+    Nothing the editor sends may be cached — not by the browser and not by a
+    host's full-page cache (LiteSpeed, Varnish, nginx fastcgi_cache, a CDN).
+    Every editor screen is personal and changes with every save; a cached copy
+    means a page list that never shows the post you just made, or a 404 that
+    outlives the page it was for. Sent from the one file every editor entry
+    point includes, before any output. PHP's session handling adds its own
+    no-cache headers too, but only after session_start(); this covers the
+    responses that are decided before that.
+*/
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    // LiteSpeed Cache and some CDNs honour these explicitly
+    header('X-LiteSpeed-Cache-Control: no-cache');
+    header('X-Accel-Expires: 0');
+}
+
 define('SWF_EDITOR_SESSION_KEY',  'swf_editor_authed');
 define('SWF_EDITOR_CSRF_KEY',     'swf_editor_csrf');
 define('SWF_EDITOR_ATTEMPTS_KEY', 'swf_editor_attempts');
