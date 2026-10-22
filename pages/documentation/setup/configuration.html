@@ -165,3 +165,51 @@ $WebsiteLanguageLocale = "en_US";
 <p>How long an authenticated editor session lasts without activity, in seconds. After this period the session expires and the password must be entered again — along with a code, if two-factor is enabled.</p>
 <pre><code class="language-php">$editorSessionTimeout = 1800; // 30 minutes
 </code></pre>
+
+<hr/>
+
+<h2>Backups</h2>
+
+<p>The editor keeps a copy of every page before it saves over it, moves deleted pages and files to a trash, and builds zips of the site. All four settings are optional; an older <code>config.php</code> without them gets the defaults shown. Full detail on the <a href="documentation/setup/backups">Versions, Trash and Backups</a> page.</p>
+
+<h3><code>$backupDir</code></h3>
+
+<p>Where everything is stored. Relative to the site root, or an absolute path. The default folder is created with an <code>.htaccess</code> that denies all web access; on a server that is not Apache, set this to a folder outside the web root.</p>
+<pre><code class="language-php">$backupDir = 'backups';
+</code></pre>
+
+<h3><code>$backupKeepVersions</code></h3>
+
+<p>How many earlier versions to keep per page.</p>
+<pre><code class="language-php">$backupKeepVersions = 20;
+</code></pre>
+
+<h3><code>$backupKeepArchives</code></h3>
+
+<p>How many automatic and scheduled site backups to keep, per kind (content / full). Backups made by hand on the Backups screen are never rotated out.</p>
+<pre><code class="language-php">$backupKeepArchives = 7;
+</code></pre>
+
+<h3><code>$backupAutoDays</code></h3>
+
+<p>Whenever a page is saved or deleted, make a content backup if the newest one is older than this many days. <code>0</code> switches the automatic backup off.</p>
+<pre><code class="language-php">$backupAutoDays = 7;
+</code></pre>
+
+<hr/>
+
+<h2>File Uploads</h2>
+
+<p>Both optional, with the defaults shown. Full detail on the <a href="documentation/setup/files">Uploading Files</a> page.</p>
+
+<h3><code>$uploadDirs</code></h3>
+
+<p>The folders (and their subfolders) the editor may upload into. <code>pages/</code> itself and every code folder are refused whatever is listed here.</p>
+<pre><code class="language-php">$uploadDirs = array('images', 'pages/images', 'pages/posts/images', 'videos');
+</code></pre>
+
+<h3><code>$uploadMaxSize</code></h3>
+
+<p>Maximum size per uploaded file, in bytes. It can never exceed PHP's own <code>upload_max_filesize</code> and <code>post_max_size</code>, which the Files screen reports.</p>
+<pre><code class="language-php">$uploadMaxSize = 25 * 1048576; // 25 MB
+</code></pre>

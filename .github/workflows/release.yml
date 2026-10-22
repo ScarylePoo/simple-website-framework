@@ -119,10 +119,20 @@ jobs:
 
           .htaccess
             The current reference .htaccess is included as .htaccess.dist.
-            Compare it with yours — if a release needs a new rewrite rule, the
-            release notes will say so, and you can copy the line across without
+            Compare it with yours and copy across anything missing, without
             losing your own redirects. You can delete .htaccess.dist afterwards
             or leave it; Apache will not serve it either way.
+
+            Rules the framework currently needs, in this order, ABOVE the
+            three framework lines that route everything to index.php:
+
+              RewriteRule ^edit/?$ plugins/editor/index.php [L,QSA]
+              RewriteRule ^backups(/|$) - [R=404,L]
+
+            The first serves the editor at /edit/. The second is a safety
+            net that refuses to serve the backups folder even if the
+            .htaccess inside it were lost. A site that predates the editor
+            will not have either.
 
           After unzipping
             1. Open config/config-example.php and look for settings you do not
