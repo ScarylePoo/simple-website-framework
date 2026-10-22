@@ -11,5 +11,5 @@
     scanner cannot read a site's version off the front page.
 */
 if (!defined('SWF_VERSION')) {
-    define('SWF_VERSION', '1.1.2'); //v1.1.2
+    define('SWF_VERSION', '1.1.3'); //v1.1.3
 }
