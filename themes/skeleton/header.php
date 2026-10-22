@@ -29,6 +29,8 @@
 	
 	<meta name="referrer" content="strict-origin">
 	<link rel="canonical" href="<?php echo $currentURL; ?>">
+	<?php /* Feed autodiscovery: the site feed and one per category; on a category page that category comes first */ ?>
+<?php echo swf_feed_link_tags($postcategory ?? ''); ?>
 	
 	<?php /* Set a fallback page excerpt/description */ ?>
 	<?php if ($pageexcerpt == "") { $pageexcerpt = $WebsiteDescription; }?>

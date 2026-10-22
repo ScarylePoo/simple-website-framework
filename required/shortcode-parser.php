@@ -6,6 +6,7 @@ function parse_shortcodes($content) {
         'pre' => 'shortcode_pre',
 		'php' => 'shortcode_php',
         'video' => 'shortcode_video',
+        'feeds' => 'shortcode_feeds',
         // Add more shortcodes as needed
     ];
 

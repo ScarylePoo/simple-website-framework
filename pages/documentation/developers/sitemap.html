@@ -1,0 +1,29 @@
+<!-- pagetitle: The Sitemap -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 10/22/2026 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: The framework generates sitemap.xml from the pages that exist, for search engines. -->
+<!-- pagekeywords: sitemap, sitemap.xml, seo, search engines, robots.txt -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>Search engines find a site's pages faster, and notice changes sooner, when the site lists them in a sitemap. The framework generates one at <code>/sitemap.xml</code> from the pages that exist, so it is never out of date and there is nothing to maintain. <code>robots.txt</code> points to it.</p>
+<hr/>
+
+<h2>What It Lists</h2>
+<p>Every live page and post, with the file's last-modified time as <code>&lt;lastmod&gt;</code> &mdash; the moment the content actually changed, rather than the editorial <code>pagedate</code>. The home page is listed as the site root.</p>
+<p>Left out: the <code>404</code> page, <code>navigation</code>, the footer columns, drafts (which are <code>.html.draft</code> files and so do not exist as pages), and any page that says it does not want to be listed:</p>
+<pre><code>&lt;!-- sitemap: no --&gt;
+</code></pre>
+<p>Add that line to a page's metadata block to keep it out &mdash; a thank-you page after a form, say, or a landing page that should only be reached from a link.</p>
+<hr/>
+
+<h2>Telling Search Engines</h2>
+<p><code>robots.txt</code> already carries <code>Sitemap: /sitemap.xml</code>, which is how most crawlers find it. You can also submit <code>https://yoursite.com/sitemap.xml</code> once in Google Search Console and Bing Webmaster Tools, which then shows you what was indexed and when.</p>
+<hr/>
+
+<h2>How It Works</h2>
+<p>A rewrite rule in the site's <code>.htaccess</code> maps <code>/sitemap.xml</code> to <code>index.php?sitemap</code>, which hands over to <code>sitemap_generator.php</code> before the cache layer loads. The page list comes from <code>swf_sitemap_pages()</code> in <code>required/feeds.php</code>, the same file that knows which posts and categories the <a href="documentation/developers/rssfeed">RSS feeds</a> contain.</p>
+<p>If you upgraded from a version without a sitemap, make sure your <code>.htaccess</code> has the rule:</p>
+<pre><code>RewriteRule ^sitemap\.xml$ index.php?sitemap=1 [L]
+</code></pre>

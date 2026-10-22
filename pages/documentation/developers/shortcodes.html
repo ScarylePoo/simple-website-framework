@@ -228,6 +228,20 @@ echo "The current year is: " . date('Y');
     <li>Several videos on one page are fine; the small reduced-motion script for autoplay is printed once at most.</li>
 </ul>
 <hr/>
+<h3><code>&#91;feeds&#93;</code> — List the Site's RSS Feeds</h3>
+<p>Renders the feeds the site offers &mdash; the whole-site feed and one per category &mdash; as a list with post counts. It is built from the categories that exist, so a new category appears on its own. Put it on an archives page, in a footer column or on a "Subscribe" page.</p>
+<pre>&#91;feeds&#93;
+&#91;feeds title="Subscribe" counts="false"&#93;</pre>
+<table>
+    <thead><tr><th>Attribute</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+        <tr><td><code>title</code></td><td>none</td><td>A heading above the list.</td></tr>
+        <tr><td><code>counts</code></td><td><code>true</code></td><td>Show the number of posts after each feed.</td></tr>
+        <tr><td><code>class</code></td><td>none</td><td>Added to the <code>&lt;ul&gt;</code>.</td></tr>
+    </tbody>
+</table>
+<p><strong>Output:</strong> <code>&lt;ul class="swf-feeds"&gt;</code> with one <code>&lt;li&gt;</code> per feed, each an <code>&lt;a type="application/rss+xml"&gt;</code> followed by <code>&lt;span class="swf-feed-count"&gt;</code>. See <a href="documentation/developers/rssfeed">The RSS Feed</a>.</p>
+<hr/>
 <h2>Adding a New Shortcode</h2>
 <p>New shortcodes are easy to add. All files in <code>required/shortcode-functions/</code> are auto-loaded, so you just need to:</p>
 <p><strong>1. Create a new file</strong> in <code>required/shortcode-functions/</code>, e.g. <code>my-shortcode.php</code>.</p>
@@ -245,6 +259,7 @@ function shortcode_myshortcode($attributes, $content) {
     'pre' =&gt; 'shortcode_pre',
     'php' =&gt; 'shortcode_php',
     'video' =&gt; 'shortcode_video',
+    'feeds' =&gt; 'shortcode_feeds',
     'myshortcode' =&gt; 'shortcode_myshortcode', // add this line
 ];
 </code></pre>

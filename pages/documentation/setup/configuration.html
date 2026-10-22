@@ -168,6 +168,22 @@ $WebsiteLanguageLocale = "en_US";
 
 <hr/>
 
+<h2>RSS Feed</h2>
+
+<p>Both optional. See <a href="documentation/developers/rssfeed">The RSS Feed</a>.</p>
+
+<h3><code>$rssFullContent</code></h3>
+<p>Put the whole rendered post in each feed item, so subscribers can read in their reader. <code>false</code> sends excerpts only.</p>
+<pre><code class="language-php">$rssFullContent = true;
+</code></pre>
+
+<h3><code>$rssMaxItems</code></h3>
+<p>How many of the newest posts a feed includes.</p>
+<pre><code class="language-php">$rssMaxItems = 50;
+</code></pre>
+
+<hr/>
+
 <h2>Backups</h2>
 
 <p>The editor keeps a copy of every page before it saves over it, moves deleted pages and files to a trash, and builds zips of the site. All four settings are optional; an older <code>config.php</code> without them gets the defaults shown. Full detail on the <a href="documentation/setup/backups">Versions, Trash and Backups</a> page.</p>

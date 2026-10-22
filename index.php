@@ -19,8 +19,21 @@
 		}
 	}
 	$currentURL = $WebsiteURL . $_SERVER['REQUEST_URI'];
+	include 'required/initialize-markdown-parser.php';
+	include 'required/shortcode-parser.php';
+	include 'required/feeds.php';
 	include 'rss_generator.php';
 		exit; // Stop further execution
+	}
+
+	// The sitemap: /sitemap.xml is rewritten to ?sitemap by .htaccess
+	if (isset($_GET['sitemap'])) {
+		include 'config/config.php';
+		if ($SSL == true) { $WebsiteURL = "https://" . ($ForceWWW == true ? "www." : "") . $WebsiteURL; }
+		else { $WebsiteURL = "http://" . ($ForceWWW == true ? "www." : "") . $WebsiteURL; }
+		include 'required/feeds.php';
+		include 'sitemap_generator.php';
+		exit;
 	}
 
 	// Enable Gzip compression for HTML output
@@ -171,6 +184,7 @@
 	include 'required/shortcode-parser.php';
 	include 'required/helperfunctions.php';
 	include 'required/version.php';
+	include 'required/feeds.php';
 	include 'required/vitalfunctions.php';
 	include 'themes/' . $theme . '/header.php';
 	if ($enableHTMLCacheServe == true) { include 'required/bottom-cache.php'; }

@@ -18,6 +18,9 @@
     # served. The folder carries its own .htaccess that denies everything; this is a second lock.
     RewriteRule ^backups(/|$) - [R=404,L]
 
+    # The sitemap is generated; see sitemap_generator.php
+    RewriteRule ^sitemap\.xml$ index.php?sitemap=1 [L]
+
     # Unpublished pages are pages/<name>.html.draft. The framework never serves them; make sure
     # Apache does not hand out the raw file either.
     RewriteRule \.draft$ - [R=404,L]

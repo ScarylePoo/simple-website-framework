@@ -1,112 +1,94 @@
 <!-- pagetitle: The RSS Feed -->
 <!-- pagelayout: page-html -->
-<!-- pagedate: 4/20/2026 -->
+<!-- pagedate: 10/22/2026 -->
 <!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
-<!-- pageexcerpt: The framework generates an RSS feed automatically from your posts. Here's how it works and how to access it. -->
-<!-- pagekeywords: rss, feed, posts, syndication, rss_generator -->
+<!-- pageexcerpt: The framework generates RSS feeds from your posts, one for the site and one per category, and tells feed readers where they are. -->
+<!-- pagekeywords: rss, feed, posts, syndication, categories, autodiscovery, subscribe, rss_generator -->
 <!-- pageauthor: Scary le Poo -->
 <!-- pagetype: article -->
 
-<p>The framework automatically generates an RSS 2.0 feed from all posts in the <code>pages/posts/</code> directory. No configuration is needed — the feed is available as soon as you have posts with the required metadata.</p>
+<p>The framework generates RSS 2.0 feeds from the posts in <code>pages/posts/</code>: one feed for the whole site and one for every category that exists. Nothing to configure; a feed is there as soon as you have a post, and a category feed appears the moment a post is tagged with a new category. The feeds are generated on each request and never cached, so they are always current.</p>
 <hr/>
-<h2>Accessing the Feed</h2>
-<p>Append <code>?rss</code> to your site's root URL:</p>
-<pre><code>https://example.com/?rss
+
+<h2>The Feeds</h2>
+<pre>
+https://example.com/?rss                        → all posts
+https://example.com/?rss=tutorials              → one category
+https://example.com/?rss=design,engineering     → posts in either category
+https://example.com/?rss=uncategorized          → posts with no category tag
+</pre>
+<p>A post belongs to the categories in its <code>pagecategory</code> tag (see <a href="documentation/developers/postsandcategories">Posts, Categories &amp; Filtering</a>); an untagged post is "uncategorized". A category feed includes a post if it is in any of the listed categories, and its channel title carries the category name ("My Site – Tutorials") so subscribers can tell their feeds apart. A category nobody has used yet gives a valid, empty feed.</p>
+<hr/>
+
+<h2>Letting People Find the Feeds</h2>
+<p>Browsers no longer show a feed button, but the thing it relied on still works: every page's <code>&lt;head&gt;</code> carries a <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> for each feed the site has. Feed readers, browser extensions and services like Feedly read those, so pasting the site's address into a reader offers the feeds by name. The list is built from the categories that exist, so it needs no upkeep. On a category page (an archive with a <code>postcategory</code> tag) that category's feed is listed first, so subscribing from <code>/tutorials</code> offers the tutorials feed before the whole-site one.</p>
+<p>The bundled themes emit the tags with one line in <code>header.php</code>, after the canonical link. Put the same line in your own theme:</p>
+<pre><code>&lt;?php echo swf_feed_link_tags($postcategory ?? ''); ?&gt;
 </code></pre>
-<p>The feed is generated dynamically on each request. It reads all <code>.html</code> files in <code>pages/posts/</code>, extracts their metadata, sorts them by date (newest first), and outputs a valid RSS 2.0 XML document.</p>
-<hr/>
-<h2>Category Feeds</h2>
-<p>The <code>?rss</code> parameter doubles as a category selector. Give it a value to filter the feed to one or more categories (see <a href="/documentation/developers/postsandcategories">Posts, Categories &amp; Filtering</a> for how categories are assigned):</p>
-<pre><code>https://example.com/?rss                        → all posts (default)
-https://example.com/?rss=all                    → all posts (explicit)
-https://example.com/?rss=tutorials              → only the "tutorials" category
-https://example.com/?rss=tutorials,seo          → posts in either category
-https://example.com/?rss=uncategorized          → only untagged posts
+<p>To show the feeds to people as well as to software, the <code>[feeds]</code> shortcode renders them as a list with post counts, for an archives page, a footer column or a "Subscribe" page:</p>
+<pre><code>[feeds]
+[feeds title="Subscribe" counts="false"]
 </code></pre>
-<p>A post is included if it belongs to <em>any</em> of the listed categories. Filtered feeds get the category name appended to the channel title (e.g. <em>"My Site – Tutorials"</em>) so subscribers can tell them apart in their reader. Category names in the URL follow the same rules as category pages: lowercase letters, numbers, and hyphens — anything else is ignored.</p>
-<p>Requesting a category that doesn't exist produces a valid, empty feed rather than an error. Note that because these are query strings, RSS requests are never cached — the <code>?rss</code> check in <code>index.php</code> runs before the caching layer loads, so every feed request renders fresh.</p>
+<p>It outputs <code>&lt;ul class="swf-feeds"&gt;</code> with one <code>&lt;li&gt;</code> per feed and a <code>&lt;span class="swf-feed-count"&gt;</code> after each, so a theme can style it. See <a href="documentation/developers/shortcodes">Shortcodes</a>.</p>
 <hr/>
+
 <h2>What Gets Included</h2>
-<p>Only posts that have <strong>all four</strong> of the following metadata fields populated are included in the feed:</p>
-<ul>
-    <li><code>pagetitle</code></li>
-    <li><code>pagedate</code></li>
-    <li><code>pageexcerpt</code></li>
-    <li><code>pageimage</code></li>
-</ul>
-<p>Posts missing any of these four fields are silently skipped. This is intentional — incomplete posts won't pollute your feed.</p>
+<p>Every live post in <code>pages/posts/</code> that has a <code>pagetitle</code> and a <code>pagedate</code>. A post without an excerpt gets an empty description; a post without an image gets <code>$WebsiteImage</code>. Drafts (<code>.html.draft</code> files) are never included. The newest <code>$rssMaxItems</code> posts are sent, 50 by default.</p>
 <hr/>
+
+<h2>Full Content or Excerpts</h2>
+<p>By default each item carries the whole post in <code>&lt;content:encoded&gt;</code>, with shortcodes processed and Markdown rendered, so subscribers can read in their reader without clicking through. Relative paths in the post (<code>pages/posts/images/photo.webp</code>, links to other pages) are made absolute, because a reader has no idea which site the text came from. The excerpt is still sent as <code>&lt;description&gt;</code>.</p>
+<p>To send excerpts only, set in <code>config/config.php</code>:</p>
+<pre><code class="language-php">$rssFullContent = false;
+</code></pre>
+<hr/>
+
 <h2>Feed Item Structure</h2>
-<p>Each item in the feed contains:</p>
 <table>
     <thead>
-        <tr>
-            <th>RSS Element</th>
-            <th>Source</th>
-        </tr>
+        <tr><th>RSS element</th><th>Source</th></tr>
     </thead>
     <tbody>
-        <tr>
-            <td><code>&lt;title&gt;</code></td>
-            <td><code>pagetitle</code> metadata</td>
-        </tr>
-        <tr>
-            <td><code>&lt;link&gt;</code></td>
-            <td><code>$WebsiteURL/posts/[filename]</code></td>
-        </tr>
-        <tr>
-            <td><code>&lt;description&gt;</code></td>
-            <td><code>pageexcerpt</code> metadata</td>
-        </tr>
-        <tr>
-            <td><code>&lt;pubDate&gt;</code></td>
-            <td><code>pagedate</code> metadata, formatted as RSS date</td>
-        </tr>
-        <tr>
-            <td><code>&lt;enclosure&gt;</code></td>
-            <td><code>pageimage</code> metadata (or <code>$WebsiteImage</code> as fallback), with MIME type and <code>length="0"</code></td>
-        </tr>
+        <tr><td><code>&lt;title&gt;</code></td><td><code>pagetitle</code></td></tr>
+        <tr><td><code>&lt;link&gt;</code>, <code>&lt;guid&gt;</code></td><td><code>$WebsiteURL/posts/[filename]</code>. The guid is the permalink, so a reader recognises an item it has already shown even if its title changes.</td></tr>
+        <tr><td><code>&lt;pubDate&gt;</code></td><td><code>pagedate</code>, as an RSS date</td></tr>
+        <tr><td><code>&lt;dc:creator&gt;</code></td><td><code>pageauthor</code>, when set</td></tr>
+        <tr><td><code>&lt;category&gt;</code></td><td>one per entry in <code>pagecategory</code>, or "uncategorized"</td></tr>
+        <tr><td><code>&lt;description&gt;</code></td><td><code>pageexcerpt</code></td></tr>
+        <tr><td><code>&lt;content:encoded&gt;</code></td><td>the rendered post, unless <code>$rssFullContent</code> is false</td></tr>
+        <tr><td><code>&lt;enclosure&gt;</code></td><td><code>pageimage</code> (or <code>$WebsiteImage</code>) as an absolute URL, with its MIME type and real file size</td></tr>
     </tbody>
 </table>
+<p>Titles and excerpts stored with HTML entities (<code>&amp;amp;</code>) are decoded before being escaped once for XML, so they display correctly in readers.</p>
 <hr/>
+
 <h2>Channel-Level Information</h2>
-<p>The feed's channel metadata is drawn directly from <code>config/config.php</code>:</p>
 <table>
     <thead>
-        <tr>
-            <th>RSS Channel Element</th>
-            <th>Config variable</th>
-        </tr>
+        <tr><th>Channel element</th><th>Source</th></tr>
     </thead>
     <tbody>
-        <tr>
-            <td><code>&lt;title&gt;</code></td>
-            <td><code>$WebsiteTitle</code></td>
-        </tr>
-        <tr>
-            <td><code>&lt;link&gt;</code></td>
-            <td><code>$WebsiteURL</code></td>
-        </tr>
-        <tr>
-            <td><code>&lt;description&gt;</code></td>
-            <td><code>$WebsiteDescription</code></td>
-        </tr>
-        <tr>
-            <td><code>&lt;image&gt;&lt;url&gt;</code></td>
-            <td><code>$WebsiteImage</code></td>
-        </tr>
+        <tr><td><code>&lt;title&gt;</code></td><td><code>$WebsiteTitle</code>, plus the category name on a category feed</td></tr>
+        <tr><td><code>&lt;link&gt;</code></td><td><code>$WebsiteURL</code></td></tr>
+        <tr><td><code>&lt;atom:link rel="self"&gt;</code></td><td>the feed's own address, which validators and some readers expect</td></tr>
+        <tr><td><code>&lt;description&gt;</code></td><td><code>$WebsiteDescription</code></td></tr>
+        <tr><td><code>&lt;language&gt;</code></td><td><code>$WebsiteLanguage</code>-<code>$WebsiteLanguageCountry</code></td></tr>
+        <tr><td><code>&lt;lastBuildDate&gt;</code></td><td>the date of the newest included post</td></tr>
+        <tr><td><code>&lt;image&gt;</code></td><td><code>$WebsiteImage</code> as an absolute URL</td></tr>
     </tbody>
 </table>
 <hr/>
-<h2>Embedding Your Feed in a Page</h2>
-<p>You can display your own feed (or any other RSS feed) on a page using the <code>[rss]</code> shortcode:</p>
-<pre><code>[rss url="https://example.com/?rss" limit="5"]
+
+<h2>Embedding a Feed in a Page</h2>
+<p>Your own feed, or anyone's, can be shown on a page with the <code>[rss]</code> shortcode:</p>
+<pre><code>[rss url="https://example.com/?rss=tutorials" limit="5"]
 </code></pre>
-<p>This will render the five most recent posts as an HTML block. See the <a href="/documentation/developers/shortcodes">Shortcodes</a> page for full details on the <code>[rss]</code> shortcode and its output structure.</p>
+<p>See <a href="documentation/developers/shortcodes">Shortcodes</a> for its output structure.</p>
 <hr/>
-<h2>How the Feed is Generated</h2>
-<p>The feed is handled by <code>rss_generator.php</code> in the site root. It is triggered by the <code>?rss</code> query parameter check at the very top of <code>index.php</code> — if the parameter is present, the RSS generator is included and execution stops, so no page rendering occurs.</p>
-<p>The generator uses the same HTML comment metadata pattern as the rest of the framework:</p>
-<pre><code>/&lt;!--\s+pagetitle:(.*?)\s+--&gt;/s
+
+<h2>How It Works</h2>
+<p><code>index.php</code> checks for <code>?rss</code> before anything else, including the cache layer, loads the shortcode and Markdown parsers and <code>required/feeds.php</code>, and hands over to <code>rss_generator.php</code>. <code>required/feeds.php</code> is the shared source of truth for which posts are live and which categories exist; the autodiscovery tags, the <code>[feeds]</code> shortcode and the <a href="documentation/developers/sitemap">sitemap</a> all read from it, so they can never disagree with the feed.</p>
+<p>Settings, both optional:</p>
+<pre><code class="language-php">$rssFullContent = true; // whole post in the feed; false for excerpts only
+$rssMaxItems    = 50;   // newest posts included
 </code></pre>
-<p>This means all post metadata must follow the standard comment format for the post to be picked up by the feed.</p>

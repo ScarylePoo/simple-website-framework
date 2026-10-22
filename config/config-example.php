@@ -13,6 +13,10 @@
 	$WebsiteAuthor = "Scary le Poo"; /* Set a default page author */
 	$WebsiteKeywords = "skeleton,framework,development,website,simplicity,security,ease,customize,flexibility"; /* Set default Keywords for site pages */
 	
+    /* RSS feed (yoursite.com/?rss, and ?rss=category). Both optional. */
+	$rssFullContent = true; /* Put the whole post in the feed, not just the excerpt. false = excerpt only */
+	$rssMaxItems    = 50;   /* Newest posts included */
+
     /* Select a Theme */
 	$theme = "skeleton";
 	

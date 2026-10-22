@@ -1,3 +1,6 @@
 User-agent: *
 Disallow: /*meta=yes
 Disallow: /edit/
+
+# Generated from the pages that exist; see sitemap_generator.php
+Sitemap: /sitemap.xml
