@@ -128,5 +128,21 @@
         $backupKeepVersions = 20;        /* Previous versions kept per page */
         $backupKeepArchives = 7;         /* Automatic/scheduled site backups kept per kind. Ones you make by hand are never rotated out */
         $backupAutoDays     = 7;         /* On save, make a content backup if the newest is older than this many days. 0 = off */
+
+        /* ── File uploads ───────────────────────────────────────────────────────
+           The editor's Files screen (and the picture button in the content
+           editor) can upload into these folders and their subfolders, and
+           nowhere else. Code folders and pages/ itself are never allowed,
+           whatever is listed here. Images, video, audio, PDF, documents,
+           text, fonts and zips are accepted; anything that could run on the
+           server is refused, and each folder gets an .htaccess that stops
+           scripts executing there regardless.
+
+           Both settings are optional; leave them out and the defaults apply.
+           The size limit can never exceed PHP's own upload_max_filesize /
+           post_max_size, which the Files screen reports.
+        ── */
+        $uploadDirs    = array('images', 'pages/images', 'pages/posts/images', 'videos');
+        $uploadMaxSize = 25 * 1048576; /* Bytes per file. Default 25 MB */
     }
 ?>

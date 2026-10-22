@@ -22,6 +22,7 @@ define('SWF_ROOT', str_replace('\\', '/', realpath(__DIR__ . '/../../')) . '/');
 require_once SWF_ROOT . 'config/config.php';
 require_once __DIR__ . '/editor-auth.php';
 require_once __DIR__ . '/editor-backup.php';
+require_once __DIR__ . '/editor-files.php';
 
 define('SWF_EDITOR_PREVIEW_KEY', 'swf_editor_preview');
 
@@ -319,6 +320,65 @@ if ($action === 'backup') {
         exit;
     }
     echo json_encode(['success' => true, 'message' => 'Backup made.', 'name' => $r['name'], 'size' => backup_fmt_size($r['size']), 'count' => $r['count']]);
+    exit;
+}
+
+// ── FILES ───────────────────────────────────────────────────────────────────
+
+if ($action === 'upload') {
+    $dir = files_validate_dir($_POST['dir'] ?? '');
+    if ($dir === false) {
+        echo json_encode(['success' => false, 'message' => 'That folder is not an upload location. Allowed: ' . implode(', ', files_upload_dirs()) . ' and their subfolders.']);
+        exit;
+    }
+    $replace = !empty($_POST['replace']);
+    $entries = files_normalize_uploads($_FILES['files'] ?? array());
+    if (!$entries) {
+        // A POST that exceeded post_max_size arrives with $_FILES empty and $_POST empty too
+        $msg = empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0
+            ? 'The upload was bigger than the server accepts in one go (' . backup_fmt_size(files_php_limit()) . '). Try fewer or smaller files.'
+            : 'No files received.';
+        echo json_encode(['success' => false, 'message' => $msg]);
+        exit;
+    }
+    $results = array();
+    $ok = 0;
+    foreach ($entries as $e) {
+        $r = files_store_upload($e, $dir, $replace);
+        if ($r['ok']) { $ok++; }
+        $results[] = $r;
+    }
+    editor_clear_all_cache();
+    echo json_encode(['success' => $ok > 0, 'message' => $ok . ' of ' . count($entries) . ' uploaded.', 'results' => $results, 'dir' => $dir]);
+    exit;
+}
+
+if ($action === 'mkdir') {
+    $r = files_make_dir($_POST['dir'] ?? '', $_POST['name'] ?? '');
+    echo json_encode(strpos($r, '/') !== false && file_exists(SWF_ROOT . $r)
+        ? ['success' => true, 'message' => 'Folder created.', 'dir' => $r]
+        : ['success' => false, 'message' => $r]);
+    exit;
+}
+
+if ($action === 'deletefile') {
+    $path = files_validate_file($_POST['path'] ?? '');
+    if ($path === false) { echo json_encode(['success' => false, 'message' => 'That file was not found.']); exit; }
+    if (backup_dir() === false) { echo json_encode(['success' => false, 'message' => 'Not deleted: the backup directory cannot be written, so the file could not be moved to the trash.']); exit; }
+    echo json_encode(files_trash_file($path)
+        ? ['success' => true, 'message' => 'Moved to the trash.']
+        : ['success' => false, 'message' => 'The file could not be moved to the trash.']);
+    exit;
+}
+
+if ($action === 'untrashfile' || $action === 'purgefile') {
+    $path = $_POST['path'] ?? ''; $stamp = $_POST['stamp'] ?? '';
+    if ($action === 'purgefile') {
+        echo json_encode(files_purge($path, $stamp) ? ['success' => true, 'message' => 'Deleted permanently.'] : ['success' => false, 'message' => 'Nothing to delete.']);
+        exit;
+    }
+    $r = files_untrash($path, $stamp);
+    echo json_encode($r === true ? ['success' => true, 'message' => 'File restored.'] : ['success' => false, 'message' => $r]);
     exit;
 }
 

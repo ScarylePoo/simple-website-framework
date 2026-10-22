@@ -39,6 +39,7 @@ if (!isset($editorEnabled) || $editorEnabled !== true) {
 
 require_once __DIR__ . '/editor-auth.php';
 require_once __DIR__ . '/editor-backup.php';
+require_once __DIR__ . '/editor-files.php';
 
 /*
     Small helpers used throughout this file.
@@ -324,6 +325,13 @@ if ($isAuthed) {
         $view = 'totp';
     } elseif (isset($_GET['backups'])) {
         $view = 'backups';
+    } elseif (isset($_GET['files'])) {
+        $view = 'files';
+        $filesDir = files_validate_dir($_GET['files']);
+        if ($filesDir === false) {
+            $roots = files_upload_dirs();
+            $filesDir = $roots ? $roots[0] : false;
+        }
     } elseif (isset($_GET['history'])) {
         $candidate = trim($_GET['history']);
         $path = editor_validate_path($candidate, SWF_ROOT);
@@ -528,6 +536,36 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .panel .pad p:last-child { margin-bottom: 0; }
 .kv { color: var(--muted); font-size: 0.88rem; }
 
+/* files */
+.crumbs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.92rem; }
+.crumbs a { text-decoration: none; color: var(--ink); padding: 3px 8px; border-radius: 4px; background: var(--panel); border: 1px solid var(--line); }
+.crumbs a.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.crumbs .sep { color: var(--muted); }
+.drop { border: 2px dashed var(--line); border-radius: 6px; padding: 22px; text-align: center; color: var(--muted); background: var(--panel); transition: background .15s, border-color .15s; }
+.drop.over { border-color: var(--accent); background: var(--bg); color: var(--ink); }
+.drop input[type=file] { display: none; }
+.drop .btn { margin-top: 10px; }
+.drop .opts { margin-top: 10px; font-size: 0.85rem; }
+.drop .opts label { display: inline-flex; gap: 6px; align-items: center; }
+.filegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; padding: 16px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.tile .thumb { aspect-ratio: 4/3; background: var(--bg) repeating-conic-gradient(#e9e8e4 0 25%, transparent 0 50%) 0 0/16px 16px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.tile .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.tile .thumb .ext { font: 600 0.9rem system-ui, sans-serif; color: var(--muted); text-transform: uppercase; background: var(--panel); padding: 6px 10px; border-radius: 4px; border: 1px solid var(--line); }
+.tile.folder .thumb { background: var(--bg); }
+.tile .info { padding: 8px 10px; font-size: 0.82rem; min-width: 0; }
+.tile .info .n { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .info .m { color: var(--muted); }
+.tile .acts { display: flex; gap: 6px; padding: 0 10px 10px; }
+.tile .acts button { flex: 1; padding: 4px 6px; font-size: 0.78rem; }
+a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
+.uplog { padding: 0 16px 12px; font-size: 0.85rem; }
+.uplog div { padding: 3px 0; }
+.uplog .bad { color: var(--err-ink); }
+.uplog .good { color: var(--ok-ink); }
+.mkdir { display: flex; gap: 8px; align-items: center; }
+.mkdir input { padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 0.88rem; width: 200px; }
+
 @media (max-width: 860px) {
     .lists, .editor-grid.previewing { grid-template-columns: 1fr; }
     .meta { grid-template-columns: 1fr; }
@@ -566,6 +604,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
     <div class="topbar">
         <a class="brand" href="<?php echo swf_e(swf_editor_url()); ?>">Editor <small><?php echo swf_e($siteTitle); ?></small></a>
         <span class="spacer"></span>
+        <a class="quiet" href="<?php echo swf_e(swf_editor_url(['files' => 1])); ?>">Files</a>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['backups' => 1])); ?>">Backups</a>
         <a class="quiet" href="/" target="_blank" rel="noopener">View site &#8599;</a>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['totp' => 'setup'])); ?>"><?php echo $totpOn ? 'Two-factor: on' : 'Two-factor: off'; ?></a>
@@ -618,10 +657,100 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
             <p class="kv" style="margin-top:12px;"><span class="status" id="status"></span></p>
         </div>
 
+    <?php elseif ($view === 'files'): ?>
+        <?php
+            $roots   = files_upload_dirs();
+            $listing = $filesDir !== false ? files_list($filesDir) : array('folders' => array(), 'files' => array(), 'exists' => false);
+            $crumbs  = array();
+            if ($filesDir !== false) {
+                $parts = explode('/', $filesDir); $acc = '';
+                foreach ($parts as $i => $part) {
+                    $acc = $acc === '' ? $part : $acc . '/' . $part;
+                    // Only crumbs that are themselves valid upload locations are links
+                    $crumbs[] = array('label' => $part, 'path' => files_validate_dir($acc) !== false ? $acc : null);
+                }
+            }
+            $maxSize = files_max_size();
+        ?>
+        <div class="wrap stack">
+            <div class="formhead">
+                <a class="btn small secondary" href="<?php echo swf_e(swf_editor_url()); ?>">&larr; All pages</a>
+                <h1>Files</h1>
+                <span class="kv">Images and other files your pages use. Paste a file's path into a page or its Image field.</span>
+                <span class="status" id="status"></span>
+            </div>
+
+            <?php if (!$roots): ?>
+                <div class="notice err">No upload folders are configured. Set <code>$uploadDirs</code> in <code>config/config.php</code>.</div>
+            <?php else: ?>
+            <div class="crumbs">
+                <?php foreach ($roots as $r): ?>
+                    <a href="<?php echo swf_e(swf_editor_url(['files' => $r])); ?>" class="<?php echo $filesDir === $r || strpos($filesDir, $r . '/') === 0 ? 'on' : ''; ?>"><?php echo swf_e($r); ?>/</a>
+                <?php endforeach; ?>
+                <?php if (count($crumbs) > 1): ?>
+                    <span class="sep">&rsaquo;</span>
+                    <?php foreach (array_slice($crumbs, 1) as $i => $c): ?>
+                        <?php if ($i > 0): ?><span class="sep">/</span><?php endif; ?>
+                        <?php if ($c['path'] !== null): ?><a href="<?php echo swf_e(swf_editor_url(['files' => $c['path']])); ?>" class="<?php echo $c['path'] === $filesDir ? 'on' : ''; ?>"><?php echo swf_e($c['label']); ?></a><?php else: ?><span><?php echo swf_e($c['label']); ?></span><?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <div class="panel">
+                <header>
+                    <h2><?php echo swf_e($filesDir); ?>/</h2>
+                    <span class="count"><?php echo count($listing['files']); ?> file<?php echo count($listing['files']) === 1 ? '' : 's'; ?><?php echo $listing['exists'] ? '' : ' &middot; folder will be created on first upload'; ?></span>
+                    <form class="mkdir" onsubmit="swfMkdir(this); return false;">
+                        <input type="text" name="name" placeholder="new subfolder" aria-label="New subfolder name">
+                        <button class="btn small secondary" type="submit">Create</button>
+                    </form>
+                </header>
+                <div class="pad">
+                    <div class="drop" id="drop" ondragover="event.preventDefault(); this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="swfDrop(event)">
+                        <div>Drop files here, or</div>
+                        <label class="btn small" for="file-input">Choose files</label>
+                        <input type="file" id="file-input" multiple onchange="swfUploadFiles(this.files)">
+                        <div class="opts">
+                            <label><input type="checkbox" id="replace-existing"> replace a file that has the same name (the old one goes to the trash)</label>
+                        </div>
+                        <div class="kv" style="margin-top:8px;">Images, video, audio, PDF, documents, text, fonts and zips, up to <?php echo backup_fmt_size($maxSize); ?> each<?php echo files_php_limit() < (int) ($uploadMaxSize ?? 25 * 1048576) ? ' (the server\'s own limit)' : ''; ?>. Names are made lowercase with hyphens.</div>
+                    </div>
+                    <div class="uplog" id="uplog"></div>
+                </div>
+                <?php if ($listing['folders'] || $listing['files']): ?>
+                <div class="filegrid">
+                    <?php foreach ($listing['folders'] as $f): ?>
+                        <a class="tile folder open" href="<?php echo swf_e(swf_editor_url(['files' => $f['path']])); ?>">
+                            <div class="thumb"><span class="ext">folder</span></div>
+                            <div class="info"><div class="n"><?php echo swf_e($f['name']); ?>/</div><div class="m"><?php echo $f['count']; ?> item<?php echo $f['count'] === 1 ? '' : 's'; ?></div></div>
+                        </a>
+                    <?php endforeach; ?>
+                    <?php foreach ($listing['files'] as $f): ?>
+                        <div class="tile" data-path="<?php echo swf_e($f['path']); ?>">
+                            <a class="open" href="/<?php echo swf_e($f['path']); ?>" target="_blank" rel="noopener">
+                                <div class="thumb"><?php if ($f['image']): ?><img src="/<?php echo swf_e($f['path']); ?>?v=<?php echo $f['mtime']; ?>" alt="" loading="lazy"><?php else: ?><span class="ext"><?php echo swf_e($f['ext']); ?></span><?php endif; ?></div>
+                            </a>
+                            <div class="info"><div class="n" title="<?php echo swf_e($f['name']); ?>"><?php echo swf_e($f['name']); ?></div><div class="m"><?php echo backup_fmt_size($f['size']); ?> &middot; <?php echo date('j M Y', $f['mtime']); ?></div></div>
+                            <div class="acts">
+                                <button class="btn small secondary" type="button" onclick="swfCopyPath(<?php echo swf_e(json_encode($f['path'])); ?>, this)">Copy path</button>
+                                <button class="btn small danger" type="button" onclick="swfDeleteFile(<?php echo swf_e(json_encode($f['path'])); ?>, this)">Delete</button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php elseif ($listing['exists']): ?>
+                    <div class="pad kv">Nothing here yet.</div>
+                <?php endif; ?>
+            </div>
+            <p class="kv">Paths are relative to the site root, which is how pages refer to them: <code>&lt;img src="<?php echo swf_e($filesDir); ?>/photo.jpg"&gt;</code>, or <code><?php echo swf_e($filesDir); ?>/photo.jpg</code> in a page's Image field. Files you delete go to the trash on the <a href="<?php echo swf_e(swf_editor_url(['backups' => 1])); ?>">Backups</a> screen.</p>
+            <?php endif; ?>
+        </div>
+
     <?php elseif ($view === 'backups'): ?>
         <?php
             $archives  = backup_list_archives();
             $trash     = backup_list_trash();
+            $ftrash    = files_list_trash();
             $bdirOk    = backup_dir() !== false;
             $autoDays  = backup_auto_days();
             $latestC   = backup_latest_archive_time('content');
@@ -696,6 +825,22 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
                         <span class="spacer"></span>
                         <button class="btn small" type="button" onclick="swfUntrash(<?php echo swf_e(json_encode($t['page'])); ?>, <?php echo swf_e(json_encode($t['stamp'])); ?>, this)">Restore</button>
                         <button class="btn small danger" type="button" onclick="swfPurge(<?php echo swf_e(json_encode($t['page'])); ?>, <?php echo swf_e(json_encode($t['stamp'])); ?>, this)">Delete permanently</button>
+                    </li>
+                <?php endforeach; ?>
+                </ul>
+            </div>
+
+            <div class="panel">
+                <header><h2>Deleted files</h2><span class="count"><?php echo count($ftrash); ?></span></header>
+                <?php if (!$ftrash): ?><div class="pad kv">No deleted files. Files deleted or replaced on the Files screen land here until you restore or permanently delete them.</div><?php endif; ?>
+                <ul class="vlist">
+                <?php foreach ($ftrash as $t): ?>
+                    <li class="vhead">
+                        <span class="when"><?php echo swf_e(basename($t['path'])); ?></span>
+                        <span class="vmeta"><code><?php echo swf_e(dirname($t['path'])); ?>/</code> &middot; <?php echo backup_fmt_size($t['size']); ?> &middot; deleted <?php echo date('D j M Y, g:i a', $t['time']); ?></span>
+                        <span class="spacer"></span>
+                        <button class="btn small" type="button" onclick="swfUntrashFile(<?php echo swf_e(json_encode($t['path'])); ?>, <?php echo swf_e(json_encode($t['stamp'])); ?>, this)">Restore</button>
+                        <button class="btn small danger" type="button" onclick="swfPurgeFile(<?php echo swf_e(json_encode($t['path'])); ?>, <?php echo swf_e(json_encode($t['stamp'])); ?>, this)">Delete permanently</button>
                     </li>
                 <?php endforeach; ?>
                 </ul>
@@ -983,6 +1128,71 @@ function swfPurge(page, stamp, btn) {
     swfGeneric({ action: 'purge', pagename: page, stamp: stamp }, btn, function () { window.location.reload(); });
 }
 
+function swfEsc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+/* Files screen */
+var SWF_FILES_DIR = <?php echo json_encode($view === 'files' ? $filesDir : ''); ?>;
+
+function swfUploadTo(dir, fileList, replace, done) {
+    var fd = new FormData();
+    fd.append('action', 'upload'); fd.append('csrf_token', SWF_CSRF); fd.append('dir', dir);
+    if (replace) { fd.append('replace', '1'); }
+    for (var i = 0; i < fileList.length; i++) { fd.append('files[]', fileList[i]); }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SWF_SAVE);
+    xhr.onload = function () {
+        var r; try { r = JSON.parse(xhr.responseText); } catch (e) { r = { success: false, message: xhr.status === 413 ? 'The server refused the upload as too large.' : 'Upload failed (server error).' }; }
+        done(r);
+    };
+    xhr.onerror = function () { done({ success: false, message: 'Upload failed (network).' }); };
+    xhr.send(fd);
+}
+
+function swfUploadFiles(fileList) {
+    if (!fileList || !fileList.length) { return; }
+    var log = document.getElementById('uplog');
+    log.innerHTML = '<div>Uploading ' + fileList.length + ' file' + (fileList.length === 1 ? '' : 's') + '…</div>';
+    swfUploadTo(SWF_FILES_DIR, fileList, document.getElementById('replace-existing').checked, function (r) {
+        var html = '';
+        (r.results || []).forEach(function (x) {
+            html += x.ok ? '<div class="good">&#10003; ' + swfEsc(x.name) + '</div>' : '<div class="bad">&#10007; ' + swfEsc(x.name) + ' &mdash; ' + swfEsc(x.message) + '</div>';
+        });
+        if (!r.results) { html = '<div class="bad">' + swfEsc(r.message) + '</div>'; }
+        var allOk = r.results && r.results.length && r.results.every(function (x) { return x.ok; });
+        if (allOk) {
+            log.innerHTML = html;
+            setTimeout(function () { window.location.reload(); }, 700);
+        } else {
+            // Leave the reasons on screen; the uploaded ones appear on refresh
+            if (r.success) { html += '<div><a href="#" onclick="window.location.reload(); return false;">Refresh to see the uploaded files</a></div>'; }
+            log.innerHTML = html;
+        }
+    });
+}
+
+function swfDrop(ev) {
+    ev.preventDefault(); document.getElementById('drop').classList.remove('over');
+    swfUploadFiles(ev.dataTransfer.files);
+}
+
+function swfMkdir(form) {
+    swfGeneric({ action: 'mkdir', dir: SWF_FILES_DIR, name: form.name.value }, null, function (r) { window.location.href = SWF_EDITOR + '?files=' + encodeURIComponent(r.dir); });
+}
+
+function swfCopyPath(path, btn) {
+    var done = function () { var t = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = t; }, 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(path).then(done, function () { window.prompt('Copy this path:', path); }); }
+    else { window.prompt('Copy this path:', path); }
+}
+
+function swfDeleteFile(path, btn) {
+    if (!confirm('Move ' + path + ' to the trash? Pages that use it will show a broken image until it is restored.')) { return; }
+    swfGeneric({ action: 'deletefile', path: path }, btn, function () { window.location.reload(); });
+}
+
+function swfUntrashFile(path, stamp, btn) { swfGeneric({ action: 'untrashfile', path: path, stamp: stamp }, btn, function () { window.location.reload(); }); }
+function swfPurgeFile(path, stamp, btn) { if (!confirm('Permanently delete this file? This cannot be undone.')) { return; } swfGeneric({ action: 'purgefile', path: path, stamp: stamp }, btn, function () { window.location.reload(); }); }
+
 function swfLogout() {
     jQuery.post(SWF_SAVE, { action: 'logout', csrf_token: SWF_CSRF }).always(function () {
         window.location.href = SWF_EDITOR;
@@ -991,6 +1201,7 @@ function swfLogout() {
 
 <?php if ($view === 'form'): ?>
 var SWF_IS_NEW   = <?php echo $isNew ? 'true' : 'false'; ?>;
+var SWF_UPLOAD_DIR = <?php echo json_encode($isPost && files_validate_dir('pages/posts/images') !== false ? 'pages/posts/images' : (files_validate_dir('pages/images') !== false ? 'pages/images' : (files_upload_dirs() ? files_upload_dirs()[0] : ''))); ?>;
 var SWF_PAGENAME = <?php echo json_encode($editName); ?>;
 var SWF_BODY     = <?php echo json_encode($page['body']); ?>;
 var swfMode      = null;   // 'rich' or 'plain'
@@ -1021,7 +1232,28 @@ function swfSetMode(mode) {
                     ['para',   ['ul', 'ol', 'paragraph']],
                     ['insert', ['link', 'picture', 'hr', 'table']],
                     ['misc',   ['codeview', 'fullscreen']]
-                ]
+                ],
+                callbacks: {
+                    /*
+                        Summernote's default is to embed a picked image as a
+                        base64 blob inside the page, which makes the file
+                        huge and the image uncacheable. Upload it instead and
+                        insert its path: posts get pages/posts/images/, pages
+                        get pages/images/.
+                    */
+                    onImageUpload: function (files) {
+                        var dir = SWF_UPLOAD_DIR;
+                        swfStatus('Uploading image…');
+                        swfUploadTo(dir, files, false, function (r) {
+                            if (!r.success) { swfStatus(r.message || 'Upload failed.', 'err'); return; }
+                            r.results.forEach(function (x) {
+                                if (x.ok) { jQuery('#rich').summernote('insertImage', x.path, x.name); }
+                                else { swfStatus(x.name + ': ' + x.message, 'err'); }
+                            });
+                            if (r.results.every(function (x) { return x.ok; })) { swfStatus('Image uploaded to ' + dir + '/.', 'ok'); }
+                        });
+                    }
+                }
             });
             swfRichReady = true;
         }
@@ -1143,8 +1375,6 @@ function swfFilterChanged() {
     other.style.display = isOther ? '' : 'none';
     document.getElementById('f-postcategory').value = isOther ? other.value.trim() : sel.value;
 }
-
-function swfEsc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
 function swfFields() {
     var f = {

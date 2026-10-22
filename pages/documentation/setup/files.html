@@ -1,0 +1,79 @@
+<!-- pagetitle: Uploading Files -->
+<!-- pagelayout: page-html -->
+<!-- pagedate: 10/21/2026 -->
+<!-- pageimage: images/laptop-computer-writing-technology-web-internet.webp -->
+<!-- pageexcerpt: Uploading images and other files from the editor, where they can go, what is accepted, and how the picture button works. -->
+<!-- pagekeywords: upload, files, images, media, drag and drop, summernote, picture, folders -->
+<!-- pageauthor: Scary le Poo -->
+<!-- pagetype: article -->
+
+<p>The editor can put files on the server for you, so an image for a page no longer means opening an FTP client. There are two ways in: the <strong>Files</strong> screen, for managing the site's media folders directly, and the <strong>picture button</strong> in the content editor, which uploads the image you pick and inserts it where the cursor is.</p>
+
+<p>Both belong to the <a href="documentation/setup/editor">editor</a>, so they are available when <code>$editorEnabled</code> is <code>true</code>.</p>
+
+<hr/>
+
+<h2>The Files screen</h2>
+
+<p>Open <strong>Files</strong> from the editor toolbar. Across the top are the folders uploads may go into, and inside each you see its subfolders and files, newest first, with thumbnails for images. From here you can:</p>
+
+<ul>
+    <li><strong>Upload</strong> by dropping files onto the dashed box or clicking <strong>Choose files</strong>. Several at once is fine. Each file reports success or the reason it was refused.</li>
+    <li><strong>Create</strong> a subfolder, say <code>images/projects/</code>, and upload into it.</li>
+    <li><strong>Copy path</strong> on any file, ready to paste into a page's <code>&lt;img src="…"&gt;</code> or its Image field. Paths are relative to the site root, which is how pages refer to files: <code>images/kitchen.jpg</code>.</li>
+    <li><strong>Delete</strong> a file. It goes to a trash, not the bin, and can be brought back from the <a href="documentation/setup/backups">Backups</a> screen.</li>
+</ul>
+
+<p>Names are tidied on the way in: lowercase, letters and digits, hyphens for everything else. <code>Kitchen Remodel (Final).JPG</code> is stored as <code>kitchen-remodel-final.jpg</code>, so the path you paste into a page will never need quoting or escaping. Uploading a name that already exists gives the new file a numbered name, <code>kitchen-2.jpg</code>; tick <strong>replace a file that has the same name</strong> to overwrite instead, in which case the old file goes to the trash first.</p>
+
+<hr/>
+
+<h2>The picture button</h2>
+
+<p>In the content editor, the picture button's default behaviour (from the Summernote library it uses) is to embed the image inside the page as a huge block of text, which makes the page file enormous and the image uncacheable. The editor overrides that: the image is uploaded and its path inserted instead. Posts upload to <code>pages/posts/images/</code>, pages to <code>pages/images/</code>, and the status line says where it went.</p>
+
+<hr/>
+
+<h2>Where files may go</h2>
+
+<p>Uploads are allowed only into the folders named in <code>$uploadDirs</code>, and their subfolders:</p>
+
+<pre>
+$uploadDirs = array('images', 'pages/images', 'pages/posts/images', 'videos');
+</pre>
+
+<p>That default is the set of places this framework keeps media. Add your own folders to the list if you keep files elsewhere. Some folders can never be upload targets whatever the list says: <code>pages/</code> itself (an upload there would be a page), and every code folder, <code>plugins/</code>, <code>required/</code>, <code>includes/</code>, <code>themes/</code>, <code>css/</code>, <code>config/</code>, and the backup folder.</p>
+
+<p>A folder that does not exist yet is created on the first upload into it.</p>
+
+<hr/>
+
+<h2>What is accepted</h2>
+
+<p>Images (jpg, png, gif, webp, avif, svg, ico), video (mp4, m4v, webm, ogv, mov), audio (mp3, ogg, wav, m4a, flac), PDF, office documents (doc, docx, xls, xlsx, ppt, pptx, odt), text (txt, md, csv, json, vtt, srt), fonts (woff, woff2, ttf, otf) and zip.</p>
+
+<p>A file has to pass two checks, not one. Its extension must be on that list, <em>and</em> what is actually inside must match: PHP looks at the content, and a file called <code>photo.png</code> that is really a script is refused with a message saying so. Images additionally have to decode as images. Anything that could run on the server, <code>.php</code>, <code>.phtml</code>, <code>.phar</code>, <code>.cgi</code>, <code>.htaccess</code> and the like, is refused outright and cannot be added to the list.</p>
+
+<p>Each upload folder also receives a small <code>.htaccess</code> telling Apache never to execute scripts there, rewritten on every upload. So even a file that somehow got through could only ever be served as a download, not run.</p>
+
+<p>Worth being clear about what this does and does not protect. The editor already lets anyone who is logged in write any HTML they like into a page, so these checks are not a boundary between trusted and untrusted people. They stop accidents, and they make sure a hijacked session cannot gain anything it did not already have. The password and two-factor are the boundary.</p>
+
+<h3>Size</h3>
+
+<p><code>$uploadMaxSize</code> caps each file, 25 MB by default. It can never exceed PHP's own limits, <code>upload_max_filesize</code> and <code>post_max_size</code>, which are set by your host; the Files screen shows whichever is in force. A shared host often allows 8 to 64 MB. If an upload of several files fails as a whole, it is usually <code>post_max_size</code>, which applies to the total; send fewer at a time.</p>
+
+<hr/>
+
+<h2>Settings</h2>
+
+<p>Both optional; an older <code>config.php</code> without them gets the defaults.</p>
+
+<table>
+    <thead>
+        <tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>$uploadDirs</code></td><td><code>array('images', 'pages/images', 'pages/posts/images', 'videos')</code></td><td>Folders (and their subfolders) uploads may go into. Code folders and <code>pages/</code> are never allowed.</td></tr>
+        <tr><td><code>$uploadMaxSize</code></td><td><code>25 * 1048576</code></td><td>Bytes per file, bounded by PHP's own limits.</td></tr>
+    </tbody>
+</table>
