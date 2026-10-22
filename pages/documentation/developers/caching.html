@@ -30,7 +30,7 @@
 </ol>
 <hr/>
 <h2>Cache File Naming</h2>
-<p>Cache files are named based on the URL path of the request. The file is stored in the site root directory as <code>cached-[pagename].html</code>. For example, a request to <code>/about</code> produces <code>cached-about.html</code>.</p>
+<p>Cache files are named after the full URL path of the request, with <code>/</code> written as <code>--</code>, and stored in the site root. A request to <code>/about</code> produces <code>cached-about.html</code>; <code>/services/roofing</code> produces <code>cached-services--roofing.html</code>, so two pages with the same name in different folders never share a file; the home page requested as <code>/</code> is <code>cached-root.html</code>. A paginated archive adds the page number: <code>/archives?page=2</code> is <code>cached-archives--page-2.html</code>.</p>
 <p>Query parameters (other than <code>?page</code>) are stripped before the cache filename is determined, so parameterised requests don't create duplicate cache entries. Three parameters bypass the cache entirely — the request is neither served from nor written to it: <code>?meta</code> (the debug overlay), <code>?editor</code> (the old editor shortcut) and <code>?preview</code> (an editor preview draft, which must never be written to disk).</p>
 <hr/>
 <h2>Cache Duration</h2>
@@ -50,5 +50,6 @@
 <ul>
     <li>The <strong>RSS feed</strong> (<code>?rss</code>) bypasses the cache entirely — it is generated fresh on every request</li>
     <li>The <strong><code>?meta=yes</code> debug overlay</strong> always reflects live state, because <code>?meta</code> requests skip the cache altogether</li>
-    <li><strong>Paginated archive pages</strong> (<code>?page=2</code> etc.) are also preserved for the same reason</li>
+    <li><strong>Paginated archive pages</strong> (<code>?page=2</code> etc.) are cached separately, one file per page number</li>
 </ul>
+<p>Only <code>?page=N</code>, where N is a whole number from 1 up, has any effect on what is cached. Every other query string is ignored: <code>/about?utm_source=x</code> is served from, and written to, the same <code>cached-about.html</code> as <code>/about</code>, and a request with a non-numeric or out-of-range <code>page</code> is rendered live and never stored. Nothing a visitor can put in a URL therefore ends up in the file everyone else receives &mdash; which is also why the canonical link and <code>og:url</code> the themes print are built from the path alone and escaped, not from the raw request.</p>

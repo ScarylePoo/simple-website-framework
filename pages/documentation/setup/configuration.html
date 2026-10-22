@@ -182,6 +182,11 @@ $WebsiteLanguageLocale = "en_US";
 <pre><code class="language-php">$rssMaxItems = 50;
 </code></pre>
 
+<h3><code>$allowPhpShortcode</code></h3>
+<p>Whether the <code>&#91;php&#93;</code> shortcode may run code written inside a page. Off by default, and best left off: it turns "can change a page" into "can run code on the server". While off, <code>&#91;php&#93;</code> blocks render as an HTML comment and the editor refuses to save a page containing one. See <a href="documentation/developers/shortcodes">Shortcodes</a>.</p>
+<pre><code class="language-php">$allowPhpShortcode = false;
+</code></pre>
+
 <hr/>
 
 <h2>Backups</h2>

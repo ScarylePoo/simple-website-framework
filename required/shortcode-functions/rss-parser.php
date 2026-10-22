@@ -45,9 +45,14 @@ function shortcode_rss_feed($attributes, $content) {
             $image = (string) $item->children('media', true)->content->attributes()->url;
         }
 
+        // A feed is someone else's data: only http(s) links and images are
+        // placed in the page, so a feed cannot hand visitors a javascript: URL.
+        if (!preg_match('#^https?://#i', trim($link)))  { $link = ''; }
+        if (!preg_match('#^https?://#i', trim($image))) { $image = ''; }
+
         // Build HTML for each RSS item
         $output .= '<div class="rss-item">';
-        $output .= '<div class="rss-title"><a href="' . htmlspecialchars($link) . '">' . htmlspecialchars($title) . '</a></div>';
+        $output .= '<div class="rss-title">' . ($link !== '' ? '<a href="' . htmlspecialchars($link) . '">' . htmlspecialchars($title) . '</a>' : htmlspecialchars($title)) . '</div>';
         $output .= '<div class="rss-date">' . htmlspecialchars($date) . '</div>';
         if (!empty($image)) {
             $output .= '<div class="rss-image"><img src="' . htmlspecialchars($image) . '" alt="Feed Image"></div>';

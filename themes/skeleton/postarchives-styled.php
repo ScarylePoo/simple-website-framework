@@ -86,7 +86,7 @@
 
 				// Pagination
 				$itemsPerPage = 5;
-				$page = isset($_GET['page']) ? $_GET['page'] : 1;
+				$page = isset($_GET["page"]) && ctype_digit((string) $_GET["page"]) ? min(100000, max(1, (int) $_GET["page"])) : 1; // a whole number from 1 up, whatever was typed into the URL
 				$startIndex = ($page - 1) * $itemsPerPage;
 				$fileDetailsPage = array_slice($fileDetails, $startIndex, $itemsPerPage);
 

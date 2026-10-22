@@ -17,6 +17,12 @@
 	$rssFullContent = true; /* Put the whole post in the feed, not just the excerpt. false = excerpt only */
 	$rssMaxItems    = 50;   /* Newest posts included */
 
+    /* The [php] shortcode runs PHP code written inside a page. It is OFF by default because it turns
+       "can edit a page" into "can run code on the server". Only switch it on if you need it and you
+       are the only person who can change page content. While it is off, the editor refuses to save
+       a page containing [php] and a [php] block in an existing page renders as an HTML comment. */
+    $allowPhpShortcode = false;
+
     /* Select a Theme */
 	$theme = "skeleton";
 	

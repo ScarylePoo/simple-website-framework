@@ -77,14 +77,17 @@ function hello() {
 <p>This is equivalent to writing <code>&lt;pre&gt;</code> directly in an HTML layout, but is more convenient in Markdown pages where raw HTML blocks can sometimes be tricky.</p>
 <hr/>
 <h3><code>&#91;php&#93;</code> — Execute PHP Code</h3>
+<p><strong>Off by default.</strong> To use it, set in <code>config/config.php</code>:</p>
+<pre><code class="language-php">$allowPhpShortcode = true;
+</code></pre>
 <p>Evaluates PHP code and inserts the output into the page at the point where the shortcode appears. The code runs via <code>eval()</code> inside an output buffer, so anything you <code>echo</code> will appear in the page.</p>
 <p><strong>Example:</strong></p>
 <pre>&#91;php&#93;
 echo "The current year is: " . date('Y');
 &#91;/php&#93;</pre>
-<p><strong>Important notes:</strong></p>
+<p><strong>Why it is off:</strong> this shortcode turns "can change a page" into "can run any code on the server". While it is off, a <code>&#91;php&#93;</code> block in a page renders as an HTML comment instead of running, and the <a href="documentation/setup/editor">editor</a> refuses to save, publish or preview content that contains one — so neither a mistake nor a script riding a logged-in editor session can put code into a page. Switch it on only if you need it and you are the only person who can change page content, and switch it off again when you are done.</p>
+<p><strong>Other notes:</strong></p>
 <ul>
-    <li>This shortcode executes arbitrary PHP. Only use it in page files you control. Anyone with write access to <code>pages/</code> can run any PHP code on the server using this shortcode.</li>
     <li>There is no sandboxing or function whitelist.</li>
     <li>Syntax errors in the evaluated code will cause a fatal error on that page.</li>
 </ul>

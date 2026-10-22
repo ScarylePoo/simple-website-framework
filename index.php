@@ -18,7 +18,7 @@
 			$WebsiteURL = "http://" . $WebsiteURL;
 		}
 	}
-	$currentURL = $WebsiteURL . $_SERVER['REQUEST_URI'];
+	$currentURL = swf_canonical_url($WebsiteURL);
 	include 'required/initialize-markdown-parser.php';
 	include 'required/shortcode-parser.php';
 	include 'required/feeds.php';
@@ -61,9 +61,25 @@
 			$WebsiteURL = "http://" . $WebsiteURL;
 		}
 	}
-	$currentURL = $WebsiteURL . $_SERVER['REQUEST_URI'];
-	
-	
+	/*
+	   $currentURL is what the themes print as the canonical link and og:url.
+	   It is built from the request PATH only, escaped, never from the raw
+	   request line. The query string is dropped, except ?page=N on a paginated
+	   archive, so that the one address visitors share is the one search
+	   engines index — and so that nothing a visitor can type into a URL ends
+	   up inside the page. That matters because the HTML cache keys on the
+	   path: whatever the first request after a cache expiry put in the URL
+	   would otherwise be served to everyone for the next five hours.
+	*/
+	$currentURL = swf_canonical_url($WebsiteURL);
+	function swf_canonical_url($base) {
+		$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		$path = '/' . ltrim((string) $path, '/');
+		$page = isset($_GET['page']) && ctype_digit((string) $_GET['page']) ? (int) $_GET['page'] : 0;
+		return htmlspecialchars($base . $path . ($page > 1 ? '?page=' . $page : ''), ENT_QUOTES, 'UTF-8');
+	}
+
+
 	/****************************************************/
 	/* Determine the protocol (http or https): */
 	

@@ -20,46 +20,37 @@ foreach ($noCacheParams as $p) {
     }
 }
 
+/*
+    Which query parameters may vary the cached copy. Only ?page=N, the
+    archive pagination, and only when N is a whole number from 1 up:
+    anything else in the query string is ignored, so the cache cannot be
+    made to write one file per made-up value (?page=1x, ?page=1y, …) and a
+    non-numeric value cannot reach the templates.
+*/
 if (!$skipCache) {
-    // Function to remove unwanted query strings from URL
-    // Only 'page' is preserved into the cache key now — meta/editor are
-    // handled above via $skipCache instead of being folded into the filename.
-    function removeUnwantedQueryString($url) {
-        $preserveParams = array('page');
-
-        $urlParts = parse_url($url);
-        $preservedQueryParams = array();
-
-        if (isset($urlParts['query'])) {
-            parse_str($urlParts['query'], $queryParams);
-            foreach ($queryParams as $key => $value) {
-                if (in_array($key, $preserveParams)) {
-                    $preservedQueryParams[$key] = $value;
-                }
-            }
+    $cachePage = 0;
+    if (isset($requestQueryParams['page'])) {
+        $p = (string) $requestQueryParams['page'];
+        if (!ctype_digit($p) || (int) $p < 1 || strlen($p) > 6) {
+            $skipCache = true;   // out of range: render live (the templates clamp it), never store it
+        } else {
+            $cachePage = (int) $p;
         }
-
-        $preservedQueryString = http_build_query($preservedQueryParams);
-
-        $urlWithoutUnwantedQueryStrings = isset($urlParts['path']) ? $urlParts['path'] : '';
-        if (!empty($preservedQueryString)) {
-            $urlWithoutUnwantedQueryStrings .= '?' . $preservedQueryString;
-        }
-
-        return $urlWithoutUnwantedQueryStrings;
     }
+}
 
-    $urlWithoutUnwantedQueryStrings = removeUnwantedQueryString($url);
-
-    $break = explode('/', $urlWithoutUnwantedQueryStrings);
-    $file = $break[count($break) - 1];
-
-    // Check if $file contains a file extension
-    if (strpos($file, '.') !== false) {
-        $cachefile = 'cached-' . substr_replace($file, "", -4) . '.html';
-    } else {
-        $cachefile = 'cached-' . $file . '.html';
-    }
+if (!$skipCache) {
+    /*
+        The cache file is named after the WHOLE path, not just its last part,
+        so pages/subfolder/test and pages/test never share a file. The path
+        here has already passed the .htaccess rule (letters, digits, hyphens
+        and slashes only) and the pages/ whitelist in index.php.
+    */
+    $path = trim(isset($urlParts['path']) ? $urlParts['path'] : '', '/');
+    $key  = $path === '' ? 'root' : str_replace('/', '--', $path);
+    $key  = preg_replace('/[^A-Za-z0-9_\-]/', '_', $key);
+    if ($cachePage > 1) { $key .= '--page-' . $cachePage; }
+    $cachefile = 'cached-' . $key . '.html';
 
     $cachetime = 18000; // Seconds, 18000 is 5 hours
 }

@@ -150,6 +150,19 @@ jobs:
               Sitemap: /sitemap.xml
             to robots.txt so search engines find the sitemap.
 
+            The Content-Security-Policy header near the bottom also gained
+            "object-src 'none'; base-uri 'self'" in 1.1.5; copy the new line
+            across.
+
+          Since 1.1.5
+            The [php] shortcode is OFF unless $allowPhpShortcode = true is in
+            config/config.php. If any of your pages use [php], add that line,
+            otherwise those blocks now render as an HTML comment. The editor
+            also refuses to save a page containing [php] while it is off.
+
+            Cache files are now named after the whole path (cached-a--b.html);
+            step 2 below applies.
+
           After unzipping
             1. Open config/config-example.php and look for settings you do not
                have in config/config.php. New features are always off until you

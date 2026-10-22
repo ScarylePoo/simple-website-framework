@@ -75,4 +75,21 @@
 		// Store the extracted value in a variable with the name specified in $variableName
 		${$variableName} = extractValueFromPattern($pagename, $pattern);
 	}
+
+	/*
+		pagelayout names a template file in the theme folder, which every theme
+		then includes. Restrict it to a plain file name — letters, digits and
+		hyphens, no slashes or dots — and to a file that actually exists in the
+		theme, so that nothing a page's metadata says can make the theme include
+		a file from anywhere else. Anything else falls back to the default layout.
+	*/
+	$pagelayout = swf_layout_name($pagelayout ?? '', $theme);
+	function swf_layout_name($layout, $theme) {
+		$layout = trim((string) $layout);
+		if ($layout === '') { return ''; }   // themes substitute their own default for an empty value
+		if (!preg_match('/^[A-Za-z0-9\-]+$/', $layout) || !is_file('themes/' . $theme . '/' . $layout . '.php')) {
+			return 'page-md';
+		}
+		return $layout;
+	}
 ?>

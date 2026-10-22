@@ -41,6 +41,10 @@
     # Set security headers
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
-    Header always set Content-Security-Policy "upgrade-insecure-requests; frame-ancestors 'self'"
+    # object-src 'none' stops Flash/Java-style plugin embeds; base-uri 'self' stops an injected <base>
+    # tag from redirecting every relative script and link on the page. Neither affects normal content.
+    Header always set Content-Security-Policy "upgrade-insecure-requests; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+    # Uncomment on an https-only site so browsers refuse to load it over plain http for a year.
+    # Header always set Strict-Transport-Security "max-age=31536000"
     Header always set Referrer-Policy "strict-origin"
 </IfModule>

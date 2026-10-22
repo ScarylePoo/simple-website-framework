@@ -60,6 +60,22 @@ if ($action !== 'logout' && !editor_verify_csrf($csrfToken)) {
 }
 
 /*
+    The [php] shortcode runs whatever is inside it on the server. While it is
+    off in config.php (the default), refuse to save, publish or preview content
+    that contains it — in the body or in any metadata field — so that nothing
+    saved through the editor, by a person or by a script riding a logged-in
+    session, can put code into a page. See required/shortcode-functions/php-parser.php.
+*/
+if (in_array($action, ['save', 'new', 'preview'], true) && empty($allowPhpShortcode)) {
+    foreach ($_POST as $k => $v) {
+        if (is_string($v) && stripos($v, '[php') !== false) {
+            echo json_encode(['success' => false, 'message' => 'This content contains a [php] shortcode, which is switched off on this site. Remove it, or set $allowPhpShortcode = true in config/config.php if you really want pages to run PHP.']);
+            exit;
+        }
+    }
+}
+
+/*
     The metadata tags the editor knows about. This list must match the tags
     read by required/vitalfunctions.php — anything missing here would be
     silently dropped from the file on every save.
@@ -156,14 +172,15 @@ function editor_settle_new_address($address, $title, $isPost = false) {
     so when a post is involved we clear the whole cache rather than guess.
 */
 function editor_clear_cache($pagename) {
-    $base = basename($pagename);
-    foreach (glob(SWF_ROOT . 'cached-' . $base . '*.html') as $f) {
-        // glob's * would also match cached-my-post-two.html; keep only the
-        // exact page and its ?page=N variants.
-        $tail = substr(basename($f), strlen('cached-' . $base));
-        if ($tail === '.html' || preg_match('/^\?page=\d+\.html$/', $tail)) {
-            @unlink($f);
-        }
+    // Cache files are named after the whole path with / as -- (see
+    // required/top-cache.php): pages/a/b.html is cached-a--b.html, and a
+    // paginated archive adds --page-N. The home page is also reachable at /,
+    // which caches as cached-root.html.
+    $keys = array(str_replace('/', '--', trim($pagename, '/')));
+    if ($pagename === 'home') { $keys[] = 'root'; }
+    foreach ($keys as $key) {
+        @unlink(SWF_ROOT . 'cached-' . $key . '.html');
+        foreach (glob(SWF_ROOT . 'cached-' . $key . '--page-*.html') as $f) { @unlink($f); }
     }
     if (strpos($pagename, 'posts/') === 0) {
         editor_clear_all_cache();

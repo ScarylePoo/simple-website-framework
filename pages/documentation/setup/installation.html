@@ -41,6 +41,38 @@
 <pre><code>sudo a2enmod rewrite
 sudo systemctl restart apache2
 </code></pre>
+<p><strong>Not on Apache?</strong> The framework is written for Apache, and several protections live only in <code>.htaccess</code> files, which nginx, Caddy, IIS and any Apache host with <code>AllowOverride None</code> ignore. If you run one of those, recreate each of these in your server's own configuration, or the site will route correctly but leave files exposed that must never be served:</p>
+<ul>
+    <li><code>config/</code> &mdash; deny everything. <code>config.php</code> holds the editor's TOTP secret in plain text.</li>
+    <li><code>backups/</code> (or your <code>$backupDir</code>) &mdash; deny everything. Page history, deleted pages and whole-site zips.</li>
+    <li><code>plugins/editor/lockouts.json</code> and <code>plugins/editor/totp-used.json</code> &mdash; deny.</li>
+    <li><code>*.draft</code> anywhere under <code>pages/</code> &mdash; deny. Unpublished pages.</li>
+    <li>Every upload folder in <code>$uploadDirs</code> &mdash; serve files, never execute them: no PHP handler for those paths.</li>
+    <li><code>/edit</code> &rarr; <code>plugins/editor/index.php</code>; <code>/sitemap.xml</code> &rarr; <code>index.php?sitemap=1</code>; everything else that is not a real file &rarr; <code>index.php</code>.</li>
+    <li>The security headers at the bottom of <code>.htaccess</code> (<code>X-Content-Type-Options</code>, <code>X-Frame-Options</code>, <code>Content-Security-Policy</code>, <code>Referrer-Policy</code>).</li>
+</ul>
+<p>An nginx <code>server</code> block covering all of it looks like this; adjust the PHP socket and the upload folders to match your own.</p>
+<pre><code>location ~ ^/(config|backups)(/|$)          { return 404; }
+location ~ ^/plugins/editor/.*\.json$        { return 404; }
+location ~ \.draft$                          { return 404; }
+location ~ ^/(images|pages/images|pages/posts/images|videos)/.*\.php { return 404; }   # your $uploadDirs; files there are never PHP
+
+location = /edit        { rewrite ^ /plugins/editor/index.php last; }
+location = /edit/       { rewrite ^ /plugins/editor/index.php last; }
+location = /sitemap.xml { rewrite ^ /index.php?sitemap=1 last; }
+location / { try_files $uri $uri/ /index.php$is_args$args; }
+
+location ~ \.php$ {
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_pass unix:/run/php/php-fpm.sock;
+}
+
+add_header X-Content-Type-Options nosniff always;
+add_header X-Frame-Options SAMEORIGIN always;
+add_header Content-Security-Policy "upgrade-insecure-requests; frame-ancestors 'self'; object-src 'none'; base-uri 'self'" always;
+add_header Referrer-Policy strict-origin always;
+</code></pre>
 <p><strong>4. Set file permissions</strong></p>
 <p>The web server needs read access to all files. If you intend to use HTML caching, the web server also needs write access to the root directory so it can create cache files:</p>
 <pre><code>chmod 755 /path/to/your/site
