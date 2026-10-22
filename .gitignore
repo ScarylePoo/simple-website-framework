@@ -1,5 +1,14 @@
+# Site-specific
 config/config.php
 passwordhash.php
-plugins/editor/totp-used.jsonbuild/
-dist/
+
+# Editor runtime state (written by plugins/editor at run time; a missing file is fine)
+plugins/editor/lockouts.json
+plugins/editor/totp-used.json
+
+# Page versions, trash and site backups
 backups/
+
+# Release workflow output when run locally
+build/
+dist/
