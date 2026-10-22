@@ -30,6 +30,7 @@ define('SWF_ROOT', str_replace('\\', '/', realpath(__DIR__ . '/../../')) . '/');
 define('SWF_EDITOR_URL', '/edit/');
 
 require_once SWF_ROOT . 'config/config.php';
+require_once SWF_ROOT . 'required/version.php';
 
 // ── Gate 1: editor switched off → behave exactly like any unknown URL ───────
 if (!isset($editorEnabled) || $editorEnabled !== true) {
@@ -623,6 +624,7 @@ a.tile.open, .tile a.open { text-decoration: none; color: inherit; }
 
     <div class="topbar">
         <a class="brand" href="<?php echo swf_e(swf_editor_url()); ?>">Editor <small><?php echo swf_e($siteTitle); ?></small></a>
+        <span class="kv" title="Simple Website Framework version">SWF <?php echo swf_e(SWF_VERSION); ?></span>
         <span class="spacer"></span>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['files' => 1])); ?>">Files</a>
         <a class="quiet" href="<?php echo swf_e(swf_editor_url(['backups' => 1])); ?>">Backups</a>

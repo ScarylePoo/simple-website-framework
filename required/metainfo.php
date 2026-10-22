@@ -30,6 +30,7 @@ $strippedUrl = stripQueryFromUrl($currentURL);
 		<strong>Language/Country:</strong> <?php echo $WebsiteLanguageCountry; ?></br>
 		<strong>Current URL:</strong> <?php echo $strippedUrl; ?></br>
 		<strong>Language/Locale:</strong> <?php echo $WebsiteLanguageLocale; ?></br>
+		<strong>Framework:</strong> Simple Website Framework <?php echo defined('SWF_VERSION') ? SWF_VERSION : 'unknown version'; ?></br>
 	</div>
 </div>
 <?php } ?>

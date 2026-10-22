@@ -48,6 +48,14 @@ sudo systemctl restart apache2
 <p><strong>5. Visit your site</strong></p>
 <p>If everything is configured correctly, navigating to your domain should display the home page. If you see a blank page or errors, check your PHP error log.</p>
 <hr/>
+<h2>Which version is a site running?</h2>
+
+<p>The version is recorded in <code>required/version.php</code> and shown in three places, none of them public: at the top of the editor next to the site title, on the <a href="documentation/developers/metatool">meta overlay</a> (<code>?meta=yes</code>), and from the command line with <code>php plugins/editor/backup-cli.php version</code>. A site cloned from the repository between releases reports the version it is heading towards.</p>
+
+<p>It is deliberately not announced in a <code>&lt;meta name="generator"&gt;</code> tag or a public file. Scanners harvest those to match sites against known problems, and there is nothing to gain from making that easy.</p>
+
+<hr/>
+
 <h2>Upgrading</h2>
 <p>Each release also has a <code>swf-upgrade-&lt;version&gt;.zip</code>. Unzip it over your existing site, replacing files when asked, and you are upgraded. It contains only framework code &mdash; <code>index.php</code>, <code>required/</code>, <code>includes/</code>, <code>css/</code>, <code>plugins/</code>, the two bundled themes and <code>config/config-example.php</code> &mdash; and never touches <code>pages/</code>, <code>images/</code>, <code>config/config.php</code>, <code>robots.txt</code>, your <code>.htaccess</code> or any theme of your own.</p>
 <p>Three things to check afterwards, all spelled out in the <code>UPGRADE.txt</code> inside the zip:</p>

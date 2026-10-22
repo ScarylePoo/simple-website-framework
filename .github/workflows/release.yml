@@ -65,6 +65,17 @@ jobs:
           find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l > /dev/null
           echo "All PHP files parse."
 
+      - name: The tag must match required/version.php
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          CODE=$(php -r 'include "required/version.php"; echo SWF_VERSION;')
+          TAG="${{ steps.version.outputs.version }}"
+          if [ "v$CODE" != "$TAG" ]; then
+            echo "::error::Tag is $TAG but required/version.php says $CODE. Bump the constant, commit, and tag that commit."
+            exit 1
+          fi
+          echo "Version $CODE matches tag $TAG."
+
       - name: Stage the upgrade package
         run: |
           set -euo pipefail
@@ -93,8 +104,6 @@ jobs:
           # default) so you can diff it against the one you have.
           cp .htaccess "$STAGE/.htaccess.dist"
 
-          echo "${{ steps.version.outputs.version }}" > "$STAGE/version.txt"
-
           cat > "$STAGE/UPGRADE.txt" <<'EOF'
           Simple Website Framework — upgrade package
           ==========================================
@@ -105,6 +114,7 @@ jobs:
           What it replaces
             index.php, rss_generator.php, LICENSE
             required/   includes/   css/   plugins/
+            (required/version.php is what tells the site which version it is on)
             themes/starter/   themes/skeleton/
             config/config-example.php   config/.htaccess
 

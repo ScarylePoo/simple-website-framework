@@ -6,6 +6,7 @@
         php plugins/editor/backup-cli.php            content backup
         php plugins/editor/backup-cli.php full       full-site backup
         php plugins/editor/backup-cli.php list       show what is stored
+        php plugins/editor/backup-cli.php version    print the framework version
 
     Archives go to the backup directory ($backupDir in config.php, default
     backups/) and are rotated: the newest $backupKeepArchives of each kind
@@ -32,6 +33,15 @@ if (PHP_SAPI !== 'cli') {
 define('SWF_EDITOR', true);
 define('SWF_ROOT', str_replace('\\', '/', realpath(__DIR__ . '/../../')) . '/');
 
+require_once SWF_ROOT . 'required/version.php';
+
+$cmd = strtolower($argv[1] ?? 'content');
+
+if ($cmd === 'version') {
+    echo "Simple Website Framework " . SWF_VERSION . "\n";
+    exit(0);
+}
+
 if (!file_exists(SWF_ROOT . 'config/config.php')) {
     fwrite(STDERR, "config/config.php not found. Copy config-example.php to config.php first.\n");
     exit(1);
@@ -39,9 +49,8 @@ if (!file_exists(SWF_ROOT . 'config/config.php')) {
 require_once SWF_ROOT . 'config/config.php';
 require_once __DIR__ . '/editor-backup.php';
 
-$cmd = strtolower($argv[1] ?? 'content');
-
 if ($cmd === 'list') {
+    echo "Simple Website Framework " . SWF_VERSION . "\n";
     $list = backup_list_archives();
     if (!$list) { echo "No archives in " . backup_dir_label() . "\n"; exit(0); }
     foreach ($list as $a) {
@@ -51,7 +60,7 @@ if ($cmd === 'list') {
 }
 
 if (!in_array($cmd, array('content', 'full'), true)) {
-    fwrite(STDERR, "Usage: php backup-cli.php [content|full|list]\n");
+    fwrite(STDERR, "Usage: php backup-cli.php [content|full|list|version]\n");
     exit(2);
 }
 

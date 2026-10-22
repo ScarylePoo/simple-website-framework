@@ -160,6 +160,7 @@
 	include 'required/initialize-markdown-parser.php';
 	include 'required/shortcode-parser.php';
 	include 'required/helperfunctions.php';
+	include 'required/version.php';
 	include 'required/vitalfunctions.php';
 	include 'themes/' . $theme . '/header.php';
 	if ($enableHTMLCacheServe == true) { include 'required/bottom-cache.php'; }
